@@ -11,7 +11,7 @@ A comprehensive digital forensics toolkit with a modern GUI, designed for image,
 ### 1. Download
 Clone the repository:
 ```bash
-git clone https://github.com/YOUR-USERNAME/YOUR-PRIVATE-REPO.git
+git clone https://github.com/Dhype7/ForensicsMainHand.git
 cd ForensicsMainHand
 ```
 
