@@ -12,7 +12,7 @@ NC='\033[0m'
 
 print_status() { echo -e "${BLUE}🔍 $1${NC}"; }
 print_success() { echo -e "${GREEN}✅ $1${NC}"; }
-print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+print_warning() { echo -e "${YELLOW}⚠  $1${NC}"; }
 print_error() { echo -e "${RED}❌ $1${NC}"; }
 
 echo "🔍 DemoAnalyzer Forensics Toolkit Installation Script"
@@ -30,26 +30,34 @@ if ! command -v apt &> /dev/null; then
 fi
 
 print_status "Updating package list..."
-# Try to fix Kali repository key issue
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 827C8569F2518CC677FECA1AED65462EC8D5E4C5 2>/dev/null || true
+# Remove deprecated apt-key usage and use modern approach
 sudo apt update || print_warning "Package list update had issues, continuing..."
 
-print_status "Installing system dependencies (Python, pip, build tools, tesseract, steghide, exiftool, binwalk, hashcat, hash-identifier, etc.)..."
-sudo apt install -y python3 python3-pip python3-tk python3-pil.imagetk tesseract-ocr steghide exiftool binwalk hashcat hash-identifier
+print_status "Installing system dependencies..."
+sudo apt install -y python3 python3-pip python3-tk python3-pil.imagetk tesseract-ocr steghide exiftool binwalk hashcat
 
-# zsteg is a Ruby gem
+# Install hash-identifier if available, otherwise use hashid
+if apt list --installed | grep -q hash-identifier; then
+    print_success "hash-identifier: Already installed"
+elif apt list | grep -q hash-identifier; then
+    sudo apt install -y hash-identifier
+    print_success "hash-identifier: Installed"
+else
+    print_warning "hash-identifier not available, will use hashid instead"
+fi
+
 if ! command -v zsteg &> /dev/null; then
-    print_status "Installing Ruby and zsteg (Ruby gem)..."
+    print_status "Installing Ruby and zsteg..."
     sudo apt install -y ruby-full
     sudo gem install zsteg
 else
     print_success "zsteg: Found"
 fi
 
-# Fallback for hash-identifier: try hashid (pip) if not found
+# Install hashid as fallback if hash-identifier is not available
 if ! command -v hash-identifier &> /dev/null; then
-    print_warning "hash-identifier not found, trying to install hashid (pip)..."
-    pip3 install hashid || print_error "Failed to install hashid. Please install a hash identifier tool manually."
+    print_warning "hash-identifier not found, installing hashid..."
+    pip3 install hashid || print_error "Failed to install hashid."
 else
     print_success "hash-identifier: Found"
 fi
@@ -63,8 +71,15 @@ source venv/bin/activate
 print_status "Upgrading pip in the virtual environment..."
 pip install --upgrade pip
 
-print_status "Installing Python libraries from requirements.txt into the virtual environment..."
-pip install -r requirements.txt
+print_status "Installing Python libraries from requirements.txt..."
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+else
+    print_warning "requirements.txt not found, installing basic dependencies..."
+    pip install pillow pytesseract exifread stegano pyzbar requests numpy opencv-python matplotlib scikit-image qrcode pypng cryptography pycryptodome geopy
+fi
+
+# Install additional dependencies that might not be in requirements.txt
 pip install scikit-image pypng pycryptodome
 
 print_status "Verifying dependencies..."
@@ -78,15 +93,35 @@ done
 
 print_status "Testing Python imports..."
 python3 -c "
-modules = ['PIL', 'pytesseract', 'exifread', 'stegano', 'pyzbar', 'requests', 'tkinter', 'numpy', 'cv2', 'matplotlib', 'scikit-image', 'qrcode', 'pypng', 'cryptography', 'pycryptodome', 'geopy']
+module_map = {
+    'PIL': 'PIL',
+    'pytesseract': 'pytesseract',
+    'exifread': 'exifread',
+    'stegano': 'stegano',
+    'pyzbar': 'pyzbar',
+    'requests': 'requests',
+    'tkinter': 'tkinter',
+    'numpy': 'numpy',
+    'cv2': 'cv2',
+    'matplotlib': 'matplotlib',
+    'scikit-image': 'skimage',
+    'qrcode': 'qrcode',
+    'pypng': 'png',
+    'cryptography': 'cryptography',
+    'pycryptodome': 'Crypto',
+    'geopy': 'geopy',
+}
+
 failed = []
-for module in modules:
+
+for name, import_name in module_map.items():
     try:
-        __import__(module)
-        print(f'✅ {module}')
+        __import__(import_name)
+        print(f'✅ {name}')
     except ImportError as e:
-        print(f'❌ {module}: {e}')
-        failed.append(module)
+        print(f'❌ {name}: {e}')
+        failed.append(name)
+
 if failed:
     print(f'\n❌ Failed to import: {failed}')
     exit(1)
@@ -95,48 +130,82 @@ else:
 "
 
 print_status "Setting executable permissions..."
-[ -f "demoanalyzer.py" ] && chmod +x demoanalyzer.py && print_success "demoanalyzer.py is executable"
+# Fix: Use main.py instead of demoanalyzer.py since that's the actual entry point
+[ -f "main.py" ] && chmod +x main.py && print_success "main.py is executable"
+[ -f "run.sh" ] && chmod +x run.sh && print_success "run.sh is executable"
 [ -f "src/forensics_main.py" ] && chmod +x src/forensics_main.py && print_success "forensics_main.py is executable"
 
 print_status "Creating desktop shortcut..."
-if [ -d "$HOME/Desktop" ]; then
+# Fix: Use the correct user's home directory and the launcher script
+if [ -d "/home/$SUDO_USER/Desktop" ]; then
+    cat > "/home/$SUDO_USER/Desktop/DemoAnalyzer.desktop" << EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DemoAnalyzer
+Comment=Forensics Toolkit - Image Analysis and Steganography Tool
+Exec=$(pwd)/run.sh
+Icon=applications-graphics
+Terminal=true
+Categories=Graphics;Security;Forensics;
+EOF
+    chmod +x "/home/$SUDO_USER/Desktop/DemoAnalyzer.desktop"
+    print_success "Desktop shortcut created"
+elif [ -d "$HOME/Desktop" ]; then
     cat > "$HOME/Desktop/DemoAnalyzer.desktop" << EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=DemoAnalyzer
 Comment=Forensics Toolkit - Image Analysis and Steganography Tool
-Exec=$(pwd)/demoanalyzer.py
+Exec=$(pwd)/run.sh
 Icon=applications-graphics
-Terminal=false
+Terminal=true
 Categories=Graphics;Security;Forensics;
 EOF
     chmod +x "$HOME/Desktop/DemoAnalyzer.desktop"
     print_success "Desktop shortcut created"
+else
+    print_warning "Desktop directory not found, skipping desktop shortcut"
 fi
 
 echo -e "\033[1;32m[!] Installation complete!\033[0m"
-echo -e "\033[1;33m[!] To use the toolkit, activate the virtual environment first:\033[0m"
-echo -e "\033[1;32msource venv/bin/activate\033[0m"
-echo -e "\033[1;33m[!] Then run your app as normal:\033[0m"
-echo -e "\033[1;32mpython main.py\033[0m"
+echo -e "\033[1;33m[!] To use the toolkit, you can either:\033[0m"
+echo -e "\033[1;33m[!] 1. Use the desktop shortcut (if created)\033[0m"
+echo -e "\033[1;33m[!] 2. Run the launcher script:\033[0m"
+echo -e "\033[1;32m./run.sh\033[0m"
+echo -e "\033[1;33m[!] 3. Or manually activate the virtual environment and run:\033[0m"
+echo -e "\033[1;32msource venv/bin/activate && python main.py\033[0m"
 
-# Auto-detect Python version
-PYMAJOR=$(python3 -c 'import sys; print(sys.version_info.major)')
-PYMINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
+# Fix: Use the correct user for the final module check
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME="/home/$SUDO_USER"
+else
+    USER_HOME="$HOME"
+fi
+
 PYVER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-USER_SITE="/home/$USER/.local/lib/python${PYVER}/site-packages"
+USER_SITE="$USER_HOME/.local/lib/python${PYVER}/site-packages"
 
-# Check for missing critical modules
-MISSING_MODULES=""
-for mod in scikit-image pypng pycryptodome; do
-    python3 -c "import $mod" 2>/dev/null || MISSING_MODULES="$MISSING_MODULES $mod"
+print_status "Checking for missing critical Python modules..."
+
+declare -A critical_modules=(
+    [scikit-image]=skimage
+    [pypng]=png
+    [pycryptodome]=Crypto
+    [requests]=requests
+)
+
+for pkg in "${!critical_modules[@]}"; do
+    mod="${critical_modules[$pkg]}"
+    if ! python3 -c "import $mod" &>/dev/null; then
+        echo -e "\033[1;33m[!] '$pkg' missing. Attempting to install it in the virtual environment...\033[0m"
+        pip install "$pkg" || {
+            echo -e "\033[1;31m[!] Failed to install $pkg. You may need to install it manually.\033[0m"
+        }
+    else
+        print_success "$pkg (import: $mod): OK"
+    fi
 done
 
-if [ ! -z "$MISSING_MODULES" ]; then
-    echo -e "\033[1;31m[!] WARNING: The following modules could not be imported:$MISSING_MODULES\033[0m"
-    echo -e "\033[1;33m[!] If you see import errors, run your app like this:\033[0m"
-    echo -e "\033[1;32mPYTHONPATH=\$PYTHONPATH:$USER_SITE python3 main.py\033[0m"
-    echo -e "\033[1;33m[!] Or, if you must use sudo:\033[0m"
-    echo -e "\033[1;32msudo PYTHONPATH=\$PYTHONPATH:$USER_SITE python3 main.py\033[0m"
-fi 
+print_success "Installation completed successfully!"

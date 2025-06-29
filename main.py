@@ -1,11 +1,6 @@
 import sys
 import os
 
-# Ensure script is run as root
-if os.geteuid() != 0:
-    print("Error: Please run this script as root (e.g., with sudo) to ensure all dependencies are available.")
-    sys.exit(1)
-
 try:
     import tkinter as tk
 except ImportError:
