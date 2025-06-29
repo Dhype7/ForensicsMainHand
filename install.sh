@@ -64,6 +64,13 @@ if ! python3 -m pip install -r requirements.txt; then
     python3 -m pip install --break-system-packages -r requirements.txt
 fi
 
+# Ensure critical packages are installed and visible
+python3 -m pip uninstall -y scikit-image pypng pycryptodome || true
+python3 -m pip install --break-system-packages scikit-image pypng pycryptodome
+
+echo -e "\033[1;33m[!] If you run the app with sudo, you may need to set PYTHONPATH to your user site-packages.\033[0m"
+echo -e "\033[1;33m[!] Example: sudo PYTHONPATH=\$PYTHONPATH:/home/$USER/.local/lib/python3.13/site-packages python3 main.py\033[0m"
+
 print_status "Verifying dependencies..."
 for tool in tesseract steghide exiftool binwalk hashcat zsteg; do
     if command -v $tool &> /dev/null; then
