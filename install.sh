@@ -18,9 +18,10 @@ print_error() { echo -e "${RED}❌ $1${NC}"; }
 echo "🔍 DemoAnalyzer Forensics Toolkit Installation Script"
 echo "=================================================="
 
-if [[ $EUID -eq 0 ]]; then
-   print_error "This script should not be run as root"
-   exit 1
+# Check if the script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo -e "\033[1;31m❌ This script must be run as root. Please use sudo ./install.sh\033[0m"
+  exit 1
 fi
 
 if ! command -v apt &> /dev/null; then
