@@ -1,0 +1,14 @@
+Pillow>=10.0.0
+geopy>=2.3.0
+tkinter-tooltip>=2.0.0
+cryptography>=41.0.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+matplotlib>=3.7.0
+scikit-image>=0.21.0
+pytesseract>=0.3.10
+pypng>=0.20220715.0
+pyzbar>=0.1.9
+qrcode>=7.4.0
+stegano>=0.9.9
+exifread 
