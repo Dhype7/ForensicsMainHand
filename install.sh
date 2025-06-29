@@ -125,4 +125,24 @@ echo ""
 echo "🚀 To run DemoAnalyzer:"
 echo "   ./demoanalyzer.py"
 echo ""
-echo "📖 For more information, see README.md" 
+echo "📖 For more information, see README.md"
+
+# Auto-detect Python version
+PYMAJOR=$(python3 -c 'import sys; print(sys.version_info.major)')
+PYMINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
+PYVER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+USER_SITE="/home/$USER/.local/lib/python${PYVER}/site-packages"
+
+# Check for missing critical modules
+MISSING_MODULES=""
+for mod in scikit-image pypng pycryptodome; do
+    python3 -c "import $mod" 2>/dev/null || MISSING_MODULES="$MISSING_MODULES $mod"
+done
+
+if [ ! -z "$MISSING_MODULES" ]; then
+    echo -e "\033[1;31m[!] WARNING: The following modules could not be imported:$MISSING_MODULES\033[0m"
+    echo -e "\033[1;33m[!] If you see import errors, run your app like this:\033[0m"
+    echo -e "\033[1;32mPYTHONPATH=\$PYTHONPATH:$USER_SITE python3 main.py\033[0m"
+    echo -e "\033[1;33m[!] Or, if you must use sudo:\033[0m"
+    echo -e "\033[1;32msudo PYTHONPATH=\$PYTHONPATH:$USER_SITE python3 main.py\033[0m"
+fi 
