@@ -729,14 +729,22 @@ class CryptoMainWindow:
 
         # Dynamically import the advanced crypto classes
         import importlib
-        adv_mod = importlib.import_module('modules.cryptography.advanced_crypto')
+        try:
+            adv_mod = importlib.import_module('src.modules.cryptography.advanced_crypto')
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to import advanced_crypto module:\n{e}")
+            return
 
         # Create buttons in a grid
         columns = 3
         for idx, (name, cls_name) in enumerate(types):
             row = idx // columns
             col = idx % columns
-            cls = getattr(adv_mod, cls_name)
+            try:
+                cls = getattr(adv_mod, cls_name)
+            except AttributeError:
+                messagebox.showerror("Class Error", f"Class '{cls_name}' not found in advanced_crypto module.")
+                continue
             btn = tk.Button(
                 btn_frame,
                 text=name,
