@@ -15,20 +15,13 @@ git clone https://github.com/YOUR-USERNAME/YOUR-PRIVATE-REPO.git
 cd DemoAnalyzer
 ```
 
-### 2. Install
-Run the provided installation script (recommended):
+### 2. Install (Recommended)
+Run the provided installation script to install **all system tools and Python libraries**:
 ```bash
 chmod +x install.sh
 sudo ./install.sh
 ```
-This will install all system and Python dependencies automatically.
-
-Or, install manually:
-```bash
-sudo apt update
-sudo apt install -y steghide exiftool binwalk tesseract-ocr zsteg xxd
-pip install -r requirements.txt
-```
+This will install all dependencies: Python libraries, tesseract-ocr, steghide, exiftool, binwalk, zsteg (Ruby gem), hashcat, hash-identifier/hashid, and more.
 
 ### 3. Run
 ```bash
@@ -52,19 +45,19 @@ sudo python3 main.py
 - **Hex Viewer**: Inspect file bytes visually
 
 ### 🔐 Cryptography Module
-- **Classical Ciphers**: Affine, Atbash, Bacon, Caesar, Playfair, Rail Fence, Rot13, Scytale, Substitution, Vigenère (encrypt/decrypt, file input/output, parameter presets)
-- **Modern UI**: Split view for classical/advanced crypto
+- **Classical Ciphers**: Affine, Atbash, Bacon, Caesar, Playfair, Rail Fence, Rot13, Scytale, Substitution, Vigenère, XOR, Binary, and more (encrypt/decrypt, file input/output, parameter presets)
+- **Advanced Crypto**: RSA, AES, Blowfish, DES, RC4, OTP, Base64/32/16, SHA-256, MD5, HMAC, Substitution, Playfair, Rail Fence, XOR, and more
+- **Magic Hasher**: Identify hash types (hash-identifier/hashid) and crack hashes with hashcat from the GUI
+- **Modern UI**: Split view for classical/advanced crypto, user-friendly grid, back navigation
 - **File Import/Export**: Work with text or files
 - **Dynamic Parameters**: Only relevant options shown
 - **Status Bar**: Real-time feedback and error handling
-- **Advanced Crypto**: (Coming soon)
 
-### 📁 File Analyzer (Early Preview)
+### 📁 File Analyzer
 - **File Carving**: Recover files from binary blobs
 - **String Analysis**: Extract readable strings
 - **Binary Analysis**: Inspect file structure
 - **Format Detection**: Identify file types
-- **Memory Analysis**: (Planned)
 
 ### 🎨 Modern GUI
 - **Dark/Light Theme**: Professional, switchable
@@ -78,37 +71,23 @@ sudo python3 main.py
 ### Prerequisites
 - Python 3.8 or higher
 - Kali Linux (recommended) or any Linux distribution
-- Required system tools: `steghide`, `exiftool`, `strings`, `binwalk`
+- **Required system tools:**
+  - `tesseract-ocr`, `steghide`, `exiftool`, `binwalk`, `zsteg` (Ruby gem), `hashcat`, `hash-identifier` (or `hashid`), `ruby-full` (for zsteg)
 
-### System Dependencies (Kali Linux)
+### Install All Dependencies (Recommended)
 ```bash
-# Update package list
-sudo apt update
-
-# Install required tools
-sudo apt install -y steghide exiftool binwalk
-
-# Install Python dependencies
-pip install -r requirements.txt
+chmod +x install.sh
+sudo ./install.sh
 ```
 
-### Manual Installation
-```bash
-# Clone or download the project
-cd DemoAnalyzer
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Make sure system tools are available
-which steghide exiftool binwalk strings
-```
+### Manual Installation (Not Recommended)
+You must install all system tools and Python libraries yourself. See `install.sh` for the full list.
 
 ## 📖 Usage
 
 ### Basic Usage
 ```bash
-python src/main.py
+sudo python3 main.py
 ```
 
 ### Features Guide
@@ -131,18 +110,24 @@ python src/main.py
 - **Show All Strings**: Extract readable strings from files
 - **Binwalk**: Advanced file analysis and hidden file extraction
 
+#### 5. Cryptography
+- **Classical/Advanced Split**: Choose between classical and advanced crypto
+- **Magic Hasher**: Identify hash types and crack hashes with hashcat from the GUI
+
 ## 🛠️ System Requirements
 
 ### Required System Tools
+- **tesseract-ocr**: OCR engine
 - **steghide**: Steganography tool for hiding data in images
 - **exiftool**: Metadata extraction and manipulation
-- **strings**: Extract printable strings from files
 - **binwalk**: Binary analysis and hidden file extraction
+- **zsteg**: PNG/BMP steganography analysis (Ruby gem)
+- **hashcat**: Password/hash cracking
+- **hash-identifier** or **hashid**: Hash type identification
+- **ruby-full**: Required for zsteg
 
 ### Python Dependencies
-- **Pillow**: Image processing and EXIF extraction
-- **geopy**: Geocoding and reverse geocoding
-- **tkinter**: GUI framework (included with Python)
+- See `requirements.txt` for the full list (includes Pillow, geopy, tkinter-tooltip, cryptography, pycryptodome, numpy, opencv-python, matplotlib, scikit-image, pytesseract, pypng, pyzbar, qrcode, stegano, exifread, etc.)
 
 ## 🔧 Configuration
 
@@ -197,14 +182,17 @@ DemoAnalyzer/
 - Detect hidden data in suspicious files
 
 ### CTF Challenges
-- Solve steganography challenges
-- Extract flags from images
-- Analyze binary files for hidden content
+- Solve steganography, cryptography, and hash cracking challenges
+- Use Magic Hasher for hash identification and automated cracking
 
-### Security Analysis
-- Investigate suspicious images
-- Detect data exfiltration attempts
-- Analyze malware samples
+## ⚠️ Troubleshooting
+- If `hashcat` or `hash-identifier` are not found, ensure they are installed and in your PATH. On some systems, you may need to install `hashid` via pip as a fallback.
+- For `zsteg`, ensure Ruby and the `zsteg` gem are installed.
+- If you encounter missing Python modules, re-run `install.sh` or manually install from `requirements.txt`.
+
+---
+
+For more information, see the code and comments, or open an issue.
 
 ## 🤝 Contributing
 
@@ -221,31 +209,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## ⚠️ Disclaimer
 
 This tool is designed for educational and legitimate security analysis purposes only. Users are responsible for ensuring they have proper authorization before analyzing any files or images.
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Tool Not Found
-```bash
-# Check if tools are installed
-which steghide exiftool binwalk strings
-
-# Install missing tools
-sudo apt install -y steghide exiftool binwalk
-```
-
-#### Permission Errors
-```bash
-# Ensure proper permissions
-chmod +x src/main.py
-```
-
-#### GUI Issues
-```bash
-# Install tkinter if missing
-sudo apt install python3-tk
-```
 
 ## 📞 Support
 

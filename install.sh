@@ -33,46 +33,32 @@ print_status "Updating package list..."
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 827C8569F2518CC677FECA1AED65462EC8D5E4C5 2>/dev/null || true
 sudo apt update || print_warning "Package list update had issues, continuing..."
 
-print_status "Installing system dependencies..."
-# Install core dependencies first
-sudo apt install -y \
-    steghide \
-    libimage-exiftool-perl \
-    binwalk \
-    python3-pip \
-    python3-tk \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    xxd
+print_status "Installing system dependencies (Python, pip, build tools, tesseract, steghide, exiftool, binwalk, hashcat, hash-identifier, etc.)..."
+sudo apt install -y python3 python3-pip python3-tk python3-pil.imagetk tesseract-ocr steghide exiftool binwalk hashcat hash-identifier
 
-# Try to install zsteg if available
-if apt search zsteg 2>/dev/null | grep -q zsteg; then
-    sudo apt install -y zsteg
-    print_success "zsteg installed"
+# zsteg is a Ruby gem
+if ! command -v zsteg &> /dev/null; then
+    print_status "Installing Ruby and zsteg (Ruby gem)..."
+    sudo apt install -y ruby-full
+    sudo gem install zsteg
 else
-    print_warning "zsteg not available in repositories, skipping"
+    print_success "zsteg: Found"
 fi
 
-print_status "Installing Python dependencies..."
-if [ -f "requirements.txt" ]; then
-    pip3 install -r requirements.txt --break-system-packages
+# Fallback for hash-identifier: try hashid (pip) if not found
+if ! command -v hash-identifier &> /dev/null; then
+    print_warning "hash-identifier not found, trying to install hashid (pip)..."
+    pip3 install hashid || print_error "Failed to install hashid. Please install a hash identifier tool manually."
 else
-    pip3 install --break-system-packages \
-        Pillow>=10.0.0 geopy>=2.3.0 tkinter-tooltip>=2.0.0 \
-        cryptography>=41.0.0 numpy>=1.24.0 opencv-python>=4.8.0 \
-        matplotlib>=3.7.0 scikit-image>=0.21.0 pytesseract>=0.3.10 \
-        pypng>=0.20220715.0 pyzbar>=0.1.9 qrcode>=7.4.0 stegano>=0.9.9 exifread
+    print_success "hash-identifier: Found"
 fi
+
+print_status "Installing Python libraries from requirements.txt..."
+pip3 install --upgrade pip
+pip3 install -r requirements.txt
 
 print_status "Verifying dependencies..."
-if command -v tesseract &> /dev/null; then
-    print_success "Tesseract OCR: $(tesseract --version | head -n 1)"
-else
-    print_error "Tesseract OCR not found"
-    exit 1
-fi
-
-for tool in steghide exiftool binwalk; do
+for tool in tesseract steghide exiftool binwalk hashcat zsteg; do
     if command -v $tool &> /dev/null; then
         print_success "$tool: Found"
     else
@@ -80,16 +66,9 @@ for tool in steghide exiftool binwalk; do
     fi
 done
 
-# Check zsteg separately since it's optional
-if command -v zsteg &> /dev/null; then
-    print_success "zsteg: Found"
-else
-    print_warning "zsteg: Not found (optional dependency)"
-fi
-
 print_status "Testing Python imports..."
 python3 -c "
-modules = ['PIL', 'pytesseract', 'exifread', 'stegano', 'pyzbar', 'requests', 'tkinter']
+modules = ['PIL', 'pytesseract', 'exifread', 'stegano', 'pyzbar', 'requests', 'tkinter', 'numpy', 'cv2', 'matplotlib', 'scikit-image', 'qrcode', 'pypng', 'cryptography', 'pycryptodome', 'geopy']
 failed = []
 for module in modules:
     try:
@@ -99,10 +78,10 @@ for module in modules:
         print(f'❌ {module}: {e}')
         failed.append(module)
 if failed:
-    print(f'\\n❌ Failed to import: {failed}')
+    print(f'\n❌ Failed to import: {failed}')
     exit(1)
 else:
-    print('\\n✅ All Python modules imported successfully')
+    print('\n✅ All Python modules imported successfully')
 "
 
 print_status "Setting executable permissions..."

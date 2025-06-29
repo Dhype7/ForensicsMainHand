@@ -9,10 +9,11 @@ import sys
 # Add parent directories to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from ui.theme import Theme
-from ui.widgets import ModernButton
-from config.settings import Settings
-from .classical_ciphers import ClassicalCiphers
+from src.ui.theme import Theme
+from src.ui.widgets import ModernButton
+from src.config.settings import Settings
+from src.modules.cryptography.crypto_main import ClassicalCiphers
+from src.modules.cryptography.classical_ciphers import BinaryCipher, XORCipher
 
 class ClassicalCryptoGUI:
     """GUI for classical cryptography ciphers"""
@@ -23,6 +24,7 @@ class ClassicalCryptoGUI:
         self.current_cipher = tk.StringVar(value="caesar")
         self.input_text = ""
         self.output_text = ""
+        self.output_font_size = 10  # Track font size for zoom functionality
         
         self.create_widgets()
         
@@ -52,9 +54,9 @@ class ClassicalCryptoGUI:
         cipher_combo = ttk.Combobox(cipher_frame, 
                                    textvariable=self.current_cipher,
                                    values=[
-                                       "Caesar", "Affine", "Atbash", "Bacon", 
+                                       "Caesar", "Affine", "Atbash", "Bacon", "Binary",
                                        "PlayFair", "Rail_Fence", "Rot13", 
-                                       "Scytale", "Substitution", "Vigenere"
+                                       "Scytale", "Substitution", "Vigenere", "XOR"
                                    ],
                                    state='readonly',
                                    width=15)
@@ -110,7 +112,11 @@ class ClassicalCryptoGUI:
         ModernButton(output_buttons_frame, text="Save File", 
                     command=self.save_file, style='secondary').pack(side='left', padx=(0, 10))
         ModernButton(output_buttons_frame, text="Clear", 
-                    command=self.clear_output, style='secondary').pack(side='left')
+                    command=self.clear_output, style='secondary').pack(side='left', padx=(0, 10))
+        ModernButton(output_buttons_frame, text="🔍 Zoom In", 
+                    command=self.zoom_in, style='secondary').pack(side='left', padx=(0, 10))
+        ModernButton(output_buttons_frame, text="🔍 Zoom Out", 
+                    command=self.zoom_out, style='secondary').pack(side='left')
         
         # Output text area
         self.output_text_area = scrolledtext.ScrolledText(output_frame, 
@@ -136,10 +142,14 @@ class ClassicalCryptoGUI:
         # Clear existing parameters
         for widget in self.params_frame.winfo_children():
             widget.destroy()
-        
+        # Clear input area for XOR
+        if hasattr(self, 'xor_input_frame'):
+            self.xor_input_frame.destroy()
         cipher = self.current_cipher.get().lower()
-        
-        if cipher == "caesar":
+        if cipher == "xor":
+            self.create_xor_dual_input()
+            return
+        elif cipher == "caesar":
             self.create_caesar_params()
         elif cipher == "affine":
             self.create_affine_params()
@@ -149,6 +159,8 @@ class ClassicalCryptoGUI:
         elif cipher == "bacon":
             # No parameters needed
             pass
+        elif cipher == "binary":
+            self.create_binary_params()
         elif cipher == "playfair":
             self.create_playfair_params()
         elif cipher == "rail_fence":
@@ -241,6 +253,103 @@ class ClassicalCryptoGUI:
         key_entry = tk.Entry(self.params_frame, textvariable=self.vigenere_key, width=15)
         key_entry.pack(side='left')
     
+    def create_xor_dual_input(self):
+        """Create two horizontally-aligned input areas for XOR"""
+        self.xor_input_frame = tk.Frame(self.parent_frame, bg=Theme.get_color('primary'))
+        self.xor_input_frame.pack(fill='x', pady=(0, 10))
+        # Input 1
+        left = tk.Frame(self.xor_input_frame, bg=Theme.get_color('primary'))
+        left.pack(side='left', fill='both', expand=True, padx=(0, 5))
+        tk.Label(left, text="Input 1:", bg=Theme.get_color('primary'), fg=Theme.get_color('text_primary')).pack(anchor='w')
+        self.xor_input1_area = scrolledtext.ScrolledText(left, height=8, width=30, font=('Courier', 10))
+        self.xor_input1_area.pack(fill='both', expand=True)
+        ModernButton(left, text="Load File", command=lambda: self.load_xor_file(self.xor_input1_area), style='secondary').pack(anchor='w', pady=(5, 0))
+        # Input 2
+        right = tk.Frame(self.xor_input_frame, bg=Theme.get_color('primary'))
+        right.pack(side='left', fill='both', expand=True, padx=(5, 0))
+        tk.Label(right, text="Input 2:", bg=Theme.get_color('primary'), fg=Theme.get_color('text_primary')).pack(anchor='w')
+        self.xor_input2_area = scrolledtext.ScrolledText(right, height=8, width=30, font=('Courier', 10))
+        self.xor_input2_area.pack(fill='both', expand=True)
+        ModernButton(right, text="Load File", command=lambda: self.load_xor_file(self.xor_input2_area), style='secondary').pack(anchor='w', pady=(5, 0))
+
+    def load_xor_file(self, text_area):
+        file_path = filedialog.askopenfilename(title="Select File for XOR Input")
+        if file_path:
+            try:
+                with open(file_path, 'rb') as f:
+                    data = f.read()
+                # Try to decode as text, fallback to hex
+                try:
+                    text = data.decode('utf-8')
+                except UnicodeDecodeError:
+                    text = ' '.join(f'{b:02x}' for b in data)
+                text_area.delete(1.0, tk.END)
+                text_area.insert(1.0, text)
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not load file: {str(e)}")
+
+    def create_binary_params(self):
+        """Create Binary cipher parameters"""
+        # Conversion type selection
+        tk.Label(self.params_frame, text="Conversion Type:", 
+                bg=Theme.get_color('primary'), 
+                fg=Theme.get_color('text_primary')).pack(side='left', padx=(0, 5))
+        
+        self.binary_conversion_type = tk.StringVar(value="text_to_binary")
+        conversion_combo = ttk.Combobox(self.params_frame, 
+                                       textvariable=self.binary_conversion_type,
+                                       values=[
+                                           "Text to Binary", "Binary to Text",
+                                           "Text to ASCII", "ASCII to Text",
+                                           "Text to Hex", "Hex to Text",
+                                           "Binary to Hex", "Hex to Binary",
+                                           "ASCII to Binary", "Binary to ASCII"
+                                       ],
+                                       state='readonly',
+                                       width=15)
+        conversion_combo.pack(side='left', padx=(0, 10))
+        
+        # Bind the conversion type change to update the button text
+        conversion_combo.bind('<<ComboboxSelected>>', self.on_binary_conversion_change)
+    
+    def on_binary_conversion_change(self, event=None):
+        """Handle binary conversion type change"""
+        conversion_type = self.binary_conversion_type.get()
+        # Update button text based on conversion type
+        if "to" in conversion_type.lower():
+            # This will be handled in the encrypt/decrypt methods
+            pass
+    
+    def handle_binary_conversion(self, input_text: str, operation: str) -> str:
+        """Handle binary cipher conversions"""
+        conversion_type = self.binary_conversion_type.get().lower().replace(" ", "_")
+        
+        try:
+            if conversion_type == "text_to_binary":
+                return BinaryCipher.text_to_binary(input_text)
+            elif conversion_type == "binary_to_text":
+                return BinaryCipher.binary_to_text(input_text)
+            elif conversion_type == "text_to_ascii":
+                return BinaryCipher.text_to_ascii(input_text)
+            elif conversion_type == "ascii_to_text":
+                return BinaryCipher.ascii_to_text(input_text)
+            elif conversion_type == "text_to_hex":
+                return BinaryCipher.text_to_hex(input_text)
+            elif conversion_type == "hex_to_text":
+                return BinaryCipher.hex_to_text(input_text)
+            elif conversion_type == "binary_to_hex":
+                return BinaryCipher.binary_to_hex(input_text)
+            elif conversion_type == "hex_to_binary":
+                return BinaryCipher.hex_to_binary(input_text)
+            elif conversion_type == "ascii_to_binary":
+                return BinaryCipher.ascii_to_binary(input_text)
+            elif conversion_type == "binary_to_ascii":
+                return BinaryCipher.binary_to_ascii(input_text)
+            else:
+                return "Invalid conversion type"
+        except Exception as e:
+            return f"Conversion error: {str(e)}"
+    
     def load_file(self):
         """Load text from file"""
         file_path = filedialog.askopenfilename(
@@ -313,6 +422,8 @@ class ClassicalCryptoGUI:
                 result = self.ciphers.atbash_encrypt(input_text)
             elif cipher == "bacon":
                 result = self.ciphers.bacon_encrypt(input_text)
+            elif cipher == "binary":
+                result = self.handle_binary_conversion(input_text, "encrypt")
             elif cipher == "playfair":
                 key = self.playfair_key.get()
                 result = self.ciphers.playfair_encrypt(input_text, key)
@@ -330,6 +441,19 @@ class ClassicalCryptoGUI:
             elif cipher == "vigenere":
                 key = self.vigenere_key.get()
                 result = self.ciphers.vigenere_encrypt(input_text, key)
+            elif cipher == "xor":
+                input1 = self.xor_input1_area.get(1.0, tk.END).strip()
+                input2 = self.xor_input2_area.get(1.0, tk.END).strip()
+                # XOR as bytes
+                try:
+                    b1 = input1.encode('utf-8')
+                    b2 = input2.encode('utf-8')
+                    min_len = min(len(b1), len(b2))
+                    xor_bytes = bytes([x ^ y for x, y in zip(b1[:min_len], b2[:min_len])])
+                    hex_result = ' '.join(f'{b:02x}' for b in xor_bytes)
+                    result = hex_result
+                except Exception as e:
+                    result = f"XOR error: {str(e)}"
             
             self.set_output_text(result)
             
@@ -360,6 +484,8 @@ class ClassicalCryptoGUI:
                 result = self.ciphers.atbash_decrypt(input_text)
             elif cipher == "bacon":
                 result = self.ciphers.bacon_decrypt(input_text)
+            elif cipher == "binary":
+                result = self.handle_binary_conversion(input_text, "decrypt")
             elif cipher == "playfair":
                 key = self.playfair_key.get()
                 result = self.ciphers.playfair_decrypt(input_text, key)
@@ -377,10 +503,25 @@ class ClassicalCryptoGUI:
             elif cipher == "vigenere":
                 key = self.vigenere_key.get()
                 result = self.ciphers.vigenere_decrypt(input_text, key)
+            elif cipher == "xor":
+                self.encrypt()
+            else:
+                result = "Decryption not implemented for this cipher"
             
             self.set_output_text(result)
             
         except ValueError as e:
             messagebox.showerror("Error", f"Invalid parameter: {str(e)}")
         except Exception as e:
-            messagebox.showerror("Error", f"Decryption failed: {str(e)}") 
+            messagebox.showerror("Error", f"Decryption failed: {str(e)}")
+    
+    def zoom_in(self):
+        """Increase output text font size by 1"""
+        self.output_font_size += 1
+        self.output_text_area.configure(font=('Courier', self.output_font_size))
+    
+    def zoom_out(self):
+        """Decrease output text font size by 1"""
+        if self.output_font_size > 6:  # Minimum font size of 6
+            self.output_font_size -= 1
+            self.output_text_area.configure(font=('Courier', self.output_font_size)) 

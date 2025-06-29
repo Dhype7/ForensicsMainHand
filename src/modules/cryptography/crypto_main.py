@@ -9,12 +9,10 @@ import re
 import math
 from typing import Dict, List, Tuple, Optional
 
-# Add parent directories to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-from ui.theme import Theme
-from ui.widgets import ModernButton
-from config.settings import Settings
+from src.ui.theme import Theme
+from src.ui.widgets import ModernButton
+from src.config.settings import Settings
+from src.modules.cryptography.classical_ciphers import BinaryCipher, XORCipher
 
 class ClassicalCiphers:
     """Collection of classical cryptography ciphers"""
@@ -485,10 +483,17 @@ class CryptoMainWindow:
         self.theme_var = tk.StringVar(value=Theme.get_current_theme())
         self.ciphers = ClassicalCiphers()
         self.current_cipher = tk.StringVar(value="caesar")
-        
+        self.output_font_size = 10
+        self.main_frame = None
+        self.content_frame = None
+        self.current_view = None
+        self.status_label: Optional[tk.Label] = None
+        self.cipher_desc_label: Optional[tk.Label] = None
+        self.theme_combo = None
+        self.footer_frame = None
         self.setup_window()
-        self.create_widgets()
-        self.setup_layout()
+        self.show_main_choice()
+        self.create_footer()
         self.apply_theme()
         
     def setup_window(self):
@@ -512,75 +517,39 @@ class CryptoMainWindow:
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
         self.root.geometry(f'{width}x{height}+{x}+{y}')
         
-    def create_widgets(self):
-        """Create all GUI widgets"""
-        # Footer FIRST so status_label is always available
-        self.create_footer()
-        # Main container
-        self.main_frame = tk.Frame(self.root, bg=Theme.get_color('primary'))
-        self.main_frame.pack(fill='both', expand=True, padx=Theme.get_spacing('large'), 
-                           pady=Theme.get_spacing('large'))
-        # Header
-        self.create_header()
-        # Main content area with split layout
-        self.create_split_content()
-        
-    def create_header(self):
-        """Create application header"""
-        header_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
-        header_frame.pack(fill='x', pady=(0, Theme.get_spacing('large')))
-        
-        # Title
-        title_label = tk.Label(header_frame, 
-                              text="Cryptography Module",
-                              font=Theme.get_font('title'),
-                              bg=Theme.get_color('primary'),
-                              fg=Theme.get_color('accent'))
-        title_label.pack(side='left')
-        
-        # Theme selector
-        theme_label = tk.Label(header_frame, 
-                              text="Theme:", 
-                              bg=Theme.get_color('primary'), 
-                              fg=Theme.get_color('text_secondary'), 
-                              font=Theme.get_font('default'))
-        theme_label.pack(side='right', padx=(0, 5))
-        
-        theme_dropdown = ttk.Combobox(header_frame, 
-                                     textvariable=self.theme_var, 
-                                     values=Theme.get_available_themes(), 
-                                     width=8, 
-                                     state='readonly')
-        theme_dropdown.pack(side='right', padx=(0, 10))
-        theme_dropdown.bind('<<ComboboxSelected>>', self.on_theme_change)
-        
-        # Subtitle
-        subtitle_label = tk.Label(header_frame,
-                                 text="Classical and Advanced Cryptography Tools",
-                                 font=Theme.get_font('default'),
-                                 bg=Theme.get_color('primary'),
-                                 fg=Theme.get_color('text_secondary'))
-        subtitle_label.pack(anchor='w')
-        
-    def create_split_content(self):
-        """Create split content area"""
-        content_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
-        content_frame.pack(fill='both', expand=True, pady=Theme.get_spacing('large'))
-        
-        # Left side - Classical Ciphers
-        left_frame = tk.Frame(content_frame, bg=Theme.get_color('secondary'), 
-                             relief='raised', bd=2)
-        left_frame.pack(side='left', fill='both', expand=True, padx=(0, 10))
-        
-        self.create_classical_section(left_frame)
-        
-        # Right side - Advanced Crypto
-        right_frame = tk.Frame(content_frame, bg=Theme.get_color('secondary'), 
-                              relief='raised', bd=2)
-        right_frame.pack(side='right', fill='both', expand=True, padx=(10, 0))
-        
-        self.create_advanced_section(right_frame)
-        
+    def clear_content(self):
+        if self.content_frame:
+            self.content_frame.destroy()
+        self.content_frame = tk.Frame(self.root, bg=Theme.get_color('primary'))
+        self.content_frame.pack(fill='both', expand=True)
+        # Always keep footer at the bottom
+        if self.footer_frame is not None:
+            self.footer_frame.lift()
+
+    def show_main_choice(self):
+        self.clear_content()
+        self.current_view = 'main_choice'
+        label = tk.Label(self.content_frame, text="Choose Cryptography Type", font=Theme.get_font('title'), fg=Theme.get_color('accent'), bg=Theme.get_color('primary'))
+        label.pack(pady=60)
+        btn_frame = tk.Frame(self.content_frame, bg=Theme.get_color('primary'))
+        btn_frame.pack(pady=40)
+        classical_btn = tk.Button(btn_frame, text="Classical", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), width=20, height=3, command=self.show_classical)
+        classical_btn.pack(side='left', padx=40)
+        advanced_btn = tk.Button(btn_frame, text="Advanced", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), width=20, height=3, command=self.show_advanced)
+        advanced_btn.pack(side='left', padx=40)
+
+    def show_classical(self):
+        self.clear_content()
+        self.current_view = 'classical'
+        back_btn = tk.Button(self.content_frame, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.show_main_choice)
+        back_btn.pack(anchor='nw', padx=20, pady=20)
+        self.create_classical_section(self.content_frame)
+
+    def show_advanced(self):
+        self.clear_content()
+        self.current_view = 'advanced'
+        self.create_advanced_section(self.content_frame)
+
     def create_classical_section(self, parent_frame):
         """Create classical ciphers section"""
         # Title with better styling
@@ -606,9 +575,9 @@ class CryptoMainWindow:
         cipher_combo = ttk.Combobox(cipher_frame, 
                                    textvariable=self.current_cipher,
                                    values=[
-                                       "caesar", "affine", "atbash", "bacon", 
+                                       "caesar", "affine", "atbash", "bacon", "binary",
                                        "playfair", "rail_fence", "rot13", 
-                                       "scytale", "substitution", "vigenere"
+                                       "scytale", "substitution", "vigenere", "xor"
                                    ],
                                    state='readonly',
                                    width=20,
@@ -644,31 +613,26 @@ class CryptoMainWindow:
         io_container.pack(fill='both', expand=True, padx=10, pady=(0, 10))
         
         # Input section
-        input_container = tk.Frame(io_container, bg=Theme.get_color('secondary'))
-        input_container.pack(side='left', fill='both', expand=True, padx=(0, 5))
-        
+        self.input_container = tk.Frame(io_container, bg=Theme.get_color('secondary'))
+        self.input_container.pack(side='left', fill='both', expand=True, padx=(0, 5))
         # Input header
-        input_header = tk.Frame(input_container, bg=Theme.get_color('secondary'))
+        input_header = tk.Frame(self.input_container, bg=Theme.get_color('secondary'))
         input_header.pack(fill='x', pady=(0, 5))
-        
         tk.Label(input_header, text="📝 Input Text", 
                 bg=Theme.get_color('secondary'), 
                 fg=Theme.get_color('text_primary'),
                 font=Theme.get_font('default')).pack(side='left')
-        
         # Input buttons with better styling
-        input_buttons_frame = tk.Frame(input_container, bg=Theme.get_color('secondary'))
+        input_buttons_frame = tk.Frame(self.input_container, bg=Theme.get_color('secondary'))
         input_buttons_frame.pack(fill='x', pady=(0, 5))
-        
         ModernButton(input_buttons_frame, text="📁 Load File", 
                     command=self.load_file, style='secondary').pack(side='left', padx=(0, 5))
         ModernButton(input_buttons_frame, text="🧹 Clear", 
                     command=self.clear_input, style='secondary').pack(side='left', padx=(0, 5))
         ModernButton(input_buttons_frame, text="💡 Example", 
                     command=self.load_example, style='secondary').pack(side='left')
-        
         # Input text area with better styling
-        self.input_text_area = scrolledtext.ScrolledText(input_container, 
+        self.input_text_area = scrolledtext.ScrolledText(self.input_container, 
                                                         height=10, 
                                                         width=30,
                                                         font=('Courier', 10),
@@ -700,9 +664,13 @@ class CryptoMainWindow:
         ModernButton(output_buttons_frame, text="🧹 Clear", 
                     command=self.clear_output, style='secondary').pack(side='left', padx=(0, 5))
         ModernButton(output_buttons_frame, text="📋 Copy", 
-                    command=self.copy_output, style='secondary').pack(side='left')
+                    command=self.copy_output, style='secondary').pack(side='left', padx=(0, 5))
+        ModernButton(output_buttons_frame, text="🔍 Zoom In", 
+                    command=self.zoom_in, style='secondary').pack(side='left', padx=(0, 5))
+        ModernButton(output_buttons_frame, text="🔍 Zoom Out", 
+                    command=self.zoom_out, style='secondary').pack(side='left')
         
-        # Output text area with better styling
+        # Output text area with better styling - ALWAYS visible
         self.output_text_area = scrolledtext.ScrolledText(output_container, 
                                                          height=10, 
                                                          width=30,
@@ -714,21 +682,20 @@ class CryptoMainWindow:
         self.output_text_area.pack(fill='both', expand=True)
         
         # Action buttons with better styling
-        action_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
-        action_frame.pack(fill='x', padx=10, pady=(0, 10))
-        
-        ModernButton(action_frame, text="🔒 Encrypt", 
+        self.action_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
+        self.action_frame.pack(fill='x', padx=10, pady=(0, 10))
+        ModernButton(self.action_frame, text="🔒 Encrypt", 
                     command=self.encrypt, style='primary').pack(side='left', padx=(0, 10))
-        ModernButton(action_frame, text="🔓 Decrypt", 
+        ModernButton(self.action_frame, text="🔓 Decrypt", 
                     command=self.decrypt, style='primary').pack(side='left', padx=(0, 10))
-        ModernButton(action_frame, text="🔄 Swap", 
+        ModernButton(self.action_frame, text="🔄 Swap", 
                     command=self.swap_text, style='secondary').pack(side='left')
         
         # Initialize parameters for first cipher
         self.on_cipher_change()
         
     def create_advanced_section(self, parent_frame):
-        """Create advanced cryptography section"""
+        """Create advanced cryptography section with direct type selection"""
         # Title
         title_label = tk.Label(parent_frame, 
                               text="🔓 Advanced Crypto",
@@ -736,93 +703,65 @@ class CryptoMainWindow:
                               bg=Theme.get_color('secondary'),
                               fg=Theme.get_color('accent'))
         title_label.pack(pady=(10, 20))
-        
-        # Coming soon message
-        coming_soon_label = tk.Label(parent_frame,
-                                    text="Coming Soon!",
-                                    font=Theme.get_font('heading'),
-                                    bg=Theme.get_color('secondary'),
-                                    fg=Theme.get_color('text_primary'))
-        coming_soon_label.pack(pady=(50, 20))
-        
-        features_label = tk.Label(parent_frame,
-                                 text="Advanced features will include:\n• RSA Encryption\n• AES/DES\n• Hash Functions\n• Digital Signatures\n• Key Exchange",
-                                 font=Theme.get_font('default'),
-                                 bg=Theme.get_color('secondary'),
-                                 fg=Theme.get_color('text_secondary'),
-                                 justify='center')
-        features_label.pack()
-        
-    def create_footer(self):
-        """Create footer with status bar"""
-        footer_frame = tk.Frame(self.root, bg=Theme.get_color('primary'), height=30)
-        footer_frame.pack(side='bottom', fill='x')
-        footer_frame.pack_propagate(False)
-        
-        # Status bar
-        self.status_label = tk.Label(footer_frame, 
-                                    text="Ready - Select a cipher to begin",
-                                    bg=Theme.get_color('primary'),
-                                    fg=Theme.get_color('text_primary'),
-                                    font=('Arial', 9),
-                                    anchor='w')
-        self.status_label.pack(side='left', padx=10, pady=5)
-        
-        # Theme selector
-        theme_frame = tk.Frame(footer_frame, bg=Theme.get_color('primary'))
-        theme_frame.pack(side='right', padx=10, pady=5)
-        
-        tk.Label(theme_frame, text="Theme:", 
-                bg=Theme.get_color('primary'),
+
+        # Button grid for advanced types
+        btn_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
+        btn_frame.pack(pady=10, padx=20, fill='both', expand=True)
+
+        # List of (name, class) tuples for advanced types
+        types = [
+            ("RSA", "RSACryptoWindow"),
+            ("AES", "AESCryptoWindow"),
+            ("Blowfish", "BlowfishCryptoWindow"),
+            ("DES", "DESCryptoWindow"),
+            ("RC4", "RC4CryptoWindow"),
+            ("Rail Fence", "RailFenceCryptoWindow"),
+            ("Substitution", "SubstitutionCryptoWindow"),
+            ("XOR", "XORCryptoWindow"),
+            ("Playfair", "PlayfairCryptoWindow"),
+            ("OTP", "OTPCryptoWindow"),
+            ("Base64/32/16", "BaseCryptoWindow"),
+            ("SHA-256", "SHA256CryptoWindow"),
+            ("MD5", "MD5CryptoWindow"),
+            ("HMAC", "HMACCryptoWindow"),
+            ("Magic Hasher", "MagicHasherWindow"),
+        ]
+
+        # Dynamically import the advanced crypto classes
+        import importlib
+        adv_mod = importlib.import_module('modules.cryptography.advanced_crypto')
+
+        # Create buttons in a grid
+        columns = 3
+        for idx, (name, cls_name) in enumerate(types):
+            row = idx // columns
+            col = idx % columns
+            cls = getattr(adv_mod, cls_name)
+            btn = tk.Button(
+                btn_frame,
+                text=name,
+                font=Theme.get_font('button'),
                 fg=Theme.get_color('text_primary'),
-                font=('Arial', 9)).pack(side='left', padx=(0, 5))
-        
-        theme_combo = ttk.Combobox(theme_frame, 
-                                  textvariable=self.theme_var,
-                                  values=["dark", "light"],
-                                  state='readonly',
-                                  width=10,
-                                  font=('Arial', 9))
-        theme_combo.pack(side='left')
-        theme_combo.bind('<<ComboboxSelected>>', self.on_theme_change)
-        
-    def setup_layout(self):
-        """Setup layout configuration"""
-        self.main_frame.pack_configure(fill='both', expand=True)
-        
-    def apply_theme(self):
-        """Apply current theme to all widgets"""
-        def update_widget_colors(widget):
-            try:
-                if isinstance(widget, tk.Label):
-                    if widget.cget('bg') == Theme.get_color('secondary'):
-                        widget.configure(bg=Theme.get_color('secondary'))
-                    else:
-                        widget.configure(bg=Theme.get_color('primary'))
-                elif isinstance(widget, tk.Frame):
-                    if widget.cget('bg') == Theme.get_color('secondary'):
-                        widget.configure(bg=Theme.get_color('secondary'))
-                    else:
-                        widget.configure(bg=Theme.get_color('primary'))
-            except tk.TclError:
-                pass
-            
-            for child in widget.winfo_children():
-                update_widget_colors(child)
-        
-        update_widget_colors(self.root)
-        
-    def on_theme_change(self, event=None):
-        """Handle theme change"""
-        Theme.set_theme(self.theme_var.get())
-        self.apply_theme()
-    
+                bg=Theme.get_color('accent'),
+                relief='flat',
+                bd=0,
+                padx=20,
+                pady=15,
+                width=18,
+                command=lambda c=cls: c(self.root)
+            )
+            btn.grid(row=row, column=col, padx=10, pady=10, sticky='nsew')
+            btn_frame.grid_columnconfigure(col, weight=1)
+        for r in range((len(types) + columns - 1) // columns):
+            btn_frame.grid_rowconfigure(r, weight=1)
+
     def on_cipher_change(self, event=None):
         """Handle cipher selection change"""
         cipher = self.current_cipher.get()
         self.update_parameters(cipher)
         self.update_cipher_description(cipher)
-        self.status_label.config(text=f"Selected {cipher} cipher - Ready to encrypt/decrypt")
+        if self.status_label is not None:
+            self.status_label.config(text=f"Selected {cipher} cipher - Ready to encrypt/decrypt")
     
     def update_cipher_description(self, cipher):
         """Update cipher description"""
@@ -831,15 +770,17 @@ class CryptoMainWindow:
             "affine": "Advanced substitution cipher using the formula E(x) = (ax + b) mod 26. 'a' must be coprime with 26.",
             "atbash": "Simple substitution cipher that replaces each letter with its reverse in the alphabet (A↔Z, B↔Y, etc.).",
             "bacon": "Steganographic cipher that hides messages using binary patterns (A/B or 0/1).",
+            "binary": "Binary conversion cipher that converts between text, binary, ASCII, and hexadecimal representations.",
             "playfair": "Digraphic substitution cipher using a 5x5 matrix. Handles letter pairs and is more secure than simple substitution.",
             "rail_fence": "Transposition cipher that writes the message in a zigzag pattern across multiple rails.",
             "rot13": "Simple substitution cipher that rotates the alphabet by 13 positions (A↔N, B↔O, etc.).",
             "scytale": "Ancient transposition cipher using a cylinder with a specific diameter to scramble text.",
             "substitution": "Simple substitution cipher where each letter is replaced by another letter from a 26-character key.",
-            "vigenere": "Polyalphabetic substitution cipher using a repeating keyword to shift letters."
+            "vigenere": "Polyalphabetic substitution cipher using a repeating keyword to shift letters.",
+            "xor": "Exclusive OR cipher that performs bitwise XOR operation on the input text."
         }
-        
-        self.cipher_desc_label.config(text=descriptions.get(cipher, ""))
+        if self.cipher_desc_label is not None:
+            self.cipher_desc_label.config(text=descriptions.get(cipher, ""))
     
     def load_example(self):
         """Load example text for the selected cipher"""
@@ -848,12 +789,14 @@ class CryptoMainWindow:
             "affine": "HELLO WORLD",
             "atbash": "HELLO WORLD",
             "bacon": "HELLO",
+            "binary": "HELLO",
             "playfair": "HELLO WORLD",
             "rail_fence": "HELLO WORLD",
             "rot13": "HELLO WORLD",
             "scytale": "HELLO WORLD",
             "substitution": "HELLO WORLD",
-            "vigenere": "HELLO WORLD"
+            "vigenere": "HELLO WORLD",
+            "xor": "HELLO WORLD"
         }
         
         cipher = self.current_cipher.get()
@@ -891,17 +834,70 @@ class CryptoMainWindow:
     def encrypt(self):
         """Encrypt the input text"""
         try:
+            cipher = self.current_cipher.get()
+            if self.status_label is not None:
+                self.status_label.config(text=f"Encrypting with {cipher} cipher...")
+            self.root.update()
+            
+            # Handle XOR cipher specially
+            if cipher == "xor":
+                # Check if XOR input areas exist
+                if not hasattr(self, 'xor_input1_area') or not hasattr(self, 'xor_input2_area'):
+                    messagebox.showerror("Error", "XOR input areas not found. Please select XOR cipher again.")
+                    return
+                
+                # Get input from XOR areas
+                input1 = self.xor_input1_area.get(1.0, tk.END).strip()
+                input2 = self.xor_input2_area.get(1.0, tk.END).strip()
+                
+                # Validate inputs
+                if not input1 or not input2:
+                    messagebox.showwarning("Warning", "Please enter text in both XOR input areas.")
+                    return
+                
+                try:
+                    # Convert to bytes and perform XOR
+                    b1 = input1.encode('utf-8')
+                    b2 = input2.encode('utf-8')
+                    min_len = min(len(b1), len(b2))
+                    
+                    if min_len == 0:
+                        messagebox.showwarning("Warning", "At least one input is empty.")
+                        return
+                    
+                    xor_bytes = bytes([x ^ y for x, y in zip(b1[:min_len], b2[:min_len])])
+                    
+                    # Always show hex for XOR results since they often contain non-printable characters
+                    result = ' '.join(f'{b:02x}' for b in xor_bytes)
+                    
+                    # If all bytes are printable ASCII, also show the text version
+                    try:
+                        text_result = xor_bytes.decode('ascii')
+                        if text_result.isprintable():
+                            result = f"Text: {text_result}\nHex: {result}"
+                    except:
+                        pass  # Keep hex-only result
+                    
+                    # Update output
+                    self.set_output_text(result)
+                    if self.status_label is not None:
+                        self.status_label.config(text=f"Successfully XORed inputs ({len(xor_bytes)} bytes)")
+                    
+                except Exception as e:
+                    error_msg = f"XOR operation failed: {str(e)}"
+                    self.set_output_text(error_msg)
+                    if self.status_label is not None:
+                        self.status_label.config(text="XOR operation failed")
+                    messagebox.showerror("Error", error_msg)
+                return
+            
+            # Handle other ciphers
             input_text = self.get_input_text()
             if not input_text:
                 messagebox.showwarning("Warning", "Please enter some text to encrypt.")
                 return
             
-            cipher = self.current_cipher.get()
-            self.status_label.config(text=f"Encrypting with {cipher} cipher...")
-            self.root.update()
-            
             result = ""
-            
             if cipher == "caesar":
                 shift = int(self.caesar_shift.get())
                 result = self.ciphers.caesar_encrypt(input_text, shift)
@@ -913,6 +909,8 @@ class CryptoMainWindow:
                 result = self.ciphers.atbash_encrypt(input_text)
             elif cipher == "bacon":
                 result = self.ciphers.bacon_encrypt(input_text)
+            elif cipher == "binary":
+                result = self.handle_binary_conversion(input_text, "encrypt")
             elif cipher == "playfair":
                 key = self.playfair_key.get()
                 result = self.ciphers.playfair_encrypt(input_text, key)
@@ -932,29 +930,37 @@ class CryptoMainWindow:
                 result = self.ciphers.vigenere_encrypt(input_text, key)
             
             self.set_output_text(result)
-            self.status_label.config(text=f"Successfully encrypted with {cipher} cipher")
+            if self.status_label is not None:
+                self.status_label.config(text=f"Successfully encrypted with {cipher} cipher")
             
         except ValueError as e:
             messagebox.showerror("Error", f"Invalid parameter: {str(e)}")
-            self.status_label.config(text="Encryption failed - Invalid parameters")
+            if self.status_label is not None:
+                self.status_label.config(text="Encryption failed - Invalid parameters")
         except Exception as e:
             messagebox.showerror("Error", f"Encryption failed: {str(e)}")
-            self.status_label.config(text="Encryption failed - Check input and parameters")
+            if self.status_label is not None:
+                self.status_label.config(text="Encryption failed - Check input and parameters")
     
     def decrypt(self):
         """Decrypt the input text"""
         try:
+            cipher = self.current_cipher.get()
+            if self.status_label is not None:
+                self.status_label.config(text=f"Decrypting with {cipher} cipher...")
+            self.root.update()
+            
+            # For XOR, decryption is the same as encryption
+            if cipher == "xor":
+                self.encrypt()  # XOR is self-inverse
+                return
+            
             input_text = self.get_input_text()
             if not input_text:
                 messagebox.showwarning("Warning", "Please enter some text to decrypt.")
                 return
             
-            cipher = self.current_cipher.get()
-            self.status_label.config(text=f"Decrypting with {cipher} cipher...")
-            self.root.update()
-            
             result = ""
-            
             if cipher == "caesar":
                 shift = int(self.caesar_shift.get())
                 result = self.ciphers.caesar_decrypt(input_text, shift)
@@ -966,6 +972,8 @@ class CryptoMainWindow:
                 result = self.ciphers.atbash_decrypt(input_text)
             elif cipher == "bacon":
                 result = self.ciphers.bacon_decrypt(input_text)
+            elif cipher == "binary":
+                result = self.handle_binary_conversion(input_text, "decrypt")
             elif cipher == "playfair":
                 key = self.playfair_key.get()
                 result = self.ciphers.playfair_decrypt(input_text, key)
@@ -985,14 +993,17 @@ class CryptoMainWindow:
                 result = self.ciphers.vigenere_decrypt(input_text, key)
             
             self.set_output_text(result)
-            self.status_label.config(text=f"Successfully decrypted with {cipher} cipher")
+            if self.status_label is not None:
+                self.status_label.config(text=f"Successfully decrypted with {cipher} cipher")
             
         except ValueError as e:
             messagebox.showerror("Error", f"Invalid parameter: {str(e)}")
-            self.status_label.config(text="Decryption failed - Invalid parameters")
+            if self.status_label is not None:
+                self.status_label.config(text="Decryption failed - Invalid parameters")
         except Exception as e:
             messagebox.showerror("Error", f"Decryption failed: {str(e)}")
-            self.status_label.config(text="Decryption failed - Check input and parameters")
+            if self.status_label is not None:
+                self.status_label.config(text="Decryption failed - Check input and parameters")
 
     def show_cipher_info(self):
         """Show information about the selected cipher"""
@@ -1014,7 +1025,19 @@ class CryptoMainWindow:
         for widget in self.params_frame.winfo_children():
             widget.destroy()
         
-        # Create parameter widgets based on cipher
+        # Handle XOR mode specially
+        if cipher == "xor":
+            # Hide the main input container for XOR mode
+            if hasattr(self, 'input_container'):
+                self.input_container.pack_forget()
+            self.create_xor_vertical_input()
+            return
+        
+        # For non-XOR ciphers, show regular input area
+        if hasattr(self, 'input_container'):
+            self.input_container.pack(side='left', fill='both', expand=True, padx=(0, 5))
+        
+        # Create parameters for other ciphers
         if cipher == "caesar":
             self.create_caesar_params()
         elif cipher == "affine":
@@ -1023,6 +1046,8 @@ class CryptoMainWindow:
             self.create_atbash_params()
         elif cipher == "bacon":
             self.create_bacon_params()
+        elif cipher == "binary":
+            self.create_binary_params()
         elif cipher == "playfair":
             self.create_playfair_params()
         elif cipher == "rail_fence":
@@ -1035,7 +1060,7 @@ class CryptoMainWindow:
             self.create_substitution_params()
         elif cipher == "vigenere":
             self.create_vigenere_params()
-    
+
     def create_caesar_params(self):
         """Create Caesar cipher parameters"""
         self.caesar_shift = tk.StringVar(value="3")
@@ -1126,6 +1151,29 @@ class CryptoMainWindow:
         variant_combo = ttk.Combobox(param_frame, textvariable=self.bacon_variant,
                                     values=["standard", "binary"],
                                     state='readonly', width=10, font=('Arial', 9))
+        variant_combo.pack(side='left')
+    
+    def create_binary_params(self):
+        """Create Binary cipher parameters"""
+        self.binary_variant = tk.StringVar(value="text_to_binary")
+        
+        param_frame = tk.Frame(self.params_frame, bg=Theme.get_color('secondary'))
+        param_frame.pack(fill='x', pady=2)
+        
+        tk.Label(param_frame, text="Conversion Type:", 
+                bg=Theme.get_color('secondary'), 
+                fg=Theme.get_color('text_primary'),
+                font=('Arial', 9)).pack(side='left', padx=(0, 5))
+        
+        variant_combo = ttk.Combobox(param_frame, textvariable=self.binary_variant,
+                                    values=[
+                                        "text_to_binary", "binary_to_text",
+                                        "text_to_ascii", "ascii_to_text",
+                                        "text_to_hex", "hex_to_text",
+                                        "binary_to_hex", "hex_to_binary",
+                                        "ascii_to_binary", "binary_to_ascii"
+                                    ],
+                                    state='readonly', width=15, font=('Arial', 9))
         variant_combo.pack(side='left')
     
     def create_playfair_params(self):
@@ -1287,6 +1335,137 @@ class CryptoMainWindow:
                            font=('Arial', 7), relief='flat', padx=3)
             btn.pack(side='left', padx=1)
 
+    def create_xor_vertical_input(self):
+        """Create XOR input areas with two text inputs and file load buttons"""
+        # Main XOR frame
+        self.xor_input_frame = tk.Frame(self.params_frame, bg=Theme.get_color('secondary'))
+        self.xor_input_frame.pack(fill='x', pady=(0, 10))
+        
+        # Input 1 section
+        input1_frame = tk.Frame(self.xor_input_frame, bg=Theme.get_color('secondary'))
+        input1_frame.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(input1_frame, text="Input 1:", 
+                bg=Theme.get_color('secondary'), 
+                fg=Theme.get_color('text_primary'),
+                font=('Arial', 10, 'bold')).pack(anchor='w', pady=(0, 5))
+        
+        self.xor_input1_area = scrolledtext.ScrolledText(
+            input1_frame, 
+            height=4, 
+            width=50, 
+            font=('Courier', 10),
+            bg='white',
+            fg='black',
+            insertbackground='black',
+            selectbackground='lightblue'
+        )
+        self.xor_input1_area.pack(fill='x', expand=True)
+        
+        ModernButton(input1_frame, text="📁 Load File", 
+                    command=lambda: self.load_xor_file(self.xor_input1_area), 
+                    style='secondary').pack(anchor='w', pady=(5, 0))
+        
+        # Input 2 section
+        input2_frame = tk.Frame(self.xor_input_frame, bg=Theme.get_color('secondary'))
+        input2_frame.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(input2_frame, text="Input 2:", 
+                bg=Theme.get_color('secondary'), 
+                fg=Theme.get_color('text_primary'),
+                font=('Arial', 10, 'bold')).pack(anchor='w', pady=(0, 5))
+        
+        self.xor_input2_area = scrolledtext.ScrolledText(
+            input2_frame, 
+            height=4, 
+            width=50, 
+            font=('Courier', 10),
+            bg='white',
+            fg='black',
+            insertbackground='black',
+            selectbackground='lightblue'
+        )
+        self.xor_input2_area.pack(fill='x', expand=True)
+        
+        ModernButton(input2_frame, text="📁 Load File", 
+                    command=lambda: self.load_xor_file(self.xor_input2_area), 
+                    style='secondary').pack(anchor='w', pady=(5, 0))
+        
+        # Result button
+        result_frame = tk.Frame(self.xor_input_frame, bg=Theme.get_color('secondary'))
+        result_frame.pack(fill='x', pady=(10, 0))
+        
+        ModernButton(result_frame, text="🔍 XOR Result", 
+                    command=self.xor_result, 
+                    style='primary').pack(anchor='w')
+
+    def load_xor_file(self, text_area):
+        file_path = filedialog.askopenfilename(title="Select File for XOR Input")
+        if file_path:
+            try:
+                with open(file_path, 'rb') as f:
+                    data = f.read()
+                # Try to decode as text, fallback to hex
+                try:
+                    text = data.decode('utf-8')
+                except UnicodeDecodeError:
+                    text = ' '.join(f'{b:02x}' for b in data)
+                text_area.delete(1.0, tk.END)
+                text_area.insert(1.0, text)
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not load file: {str(e)}")
+
+    def xor_result(self):
+        """Perform XOR operation and display result"""
+        try:
+            # Check if XOR input areas exist
+            if not hasattr(self, 'xor_input1_area') or not hasattr(self, 'xor_input2_area'):
+                messagebox.showerror("Error", "XOR input areas not found. Please select XOR cipher again.")
+                return
+            
+            # Get input from XOR areas
+            input1 = self.xor_input1_area.get(1.0, tk.END).strip()
+            input2 = self.xor_input2_area.get(1.0, tk.END).strip()
+            
+            # Validate inputs
+            if not input1 or not input2:
+                messagebox.showwarning("Warning", "Please enter text in both XOR input areas.")
+                return
+            
+            # Convert to bytes and perform XOR
+            b1 = input1.encode('utf-8')
+            b2 = input2.encode('utf-8')
+            min_len = min(len(b1), len(b2))
+            
+            if min_len == 0:
+                messagebox.showwarning("Warning", "At least one input is empty.")
+                return
+            
+            xor_bytes = bytes([x ^ y for x, y in zip(b1[:min_len], b2[:min_len])])
+            
+            # Always show hex for XOR results since they often contain non-printable characters
+            result = ' '.join(f'{b:02x}' for b in xor_bytes)
+            
+            # If all bytes are printable ASCII, also show the text version
+            try:
+                text_result = xor_bytes.decode('ascii')
+                if text_result.isprintable():
+                    result = f"Text: {text_result}\nHex: {result}"
+            except:
+                pass  # Keep hex-only result
+            
+            # Update output using the standard method
+            self.set_output_text(result)
+            if self.status_label is not None:
+                self.status_label.config(text=f"XOR result computed ({len(xor_bytes)} bytes)")
+            
+        except Exception as e:
+            error_msg = f"XOR operation failed: {str(e)}"
+            self.set_output_text(error_msg)
+            if self.status_label is not None:
+                self.status_label.config(text="XOR operation failed")
+            messagebox.showerror("Error", error_msg)
+
     def load_file(self):
         """Load text from file"""
         file_path = filedialog.askopenfilename(
@@ -1319,4 +1498,115 @@ class CryptoMainWindow:
                     file.write(content)
                 messagebox.showinfo("Success", "File saved successfully!")
             except Exception as e:
-                messagebox.showerror("Error", f"Could not save file: {str(e)}") 
+                messagebox.showerror("Error", f"Could not save file: {str(e)}")
+
+    def handle_binary_conversion(self, text, operation):
+        """Handle binary conversion"""
+        try:
+            variant = getattr(self, 'binary_variant', tk.StringVar(value="text_to_binary")).get()
+            
+            if variant == "text_to_binary":
+                result = BinaryCipher.text_to_binary(text)
+            elif variant == "binary_to_text":
+                result = BinaryCipher.binary_to_text(text)
+            elif variant == "text_to_ascii":
+                result = BinaryCipher.text_to_ascii(text)
+            elif variant == "ascii_to_text":
+                result = BinaryCipher.ascii_to_text(text)
+            elif variant == "text_to_hex":
+                result = BinaryCipher.text_to_hex(text)
+            elif variant == "hex_to_text":
+                result = BinaryCipher.hex_to_text(text)
+            elif variant == "binary_to_hex":
+                result = BinaryCipher.binary_to_hex(text)
+            elif variant == "hex_to_binary":
+                result = BinaryCipher.hex_to_binary(text)
+            elif variant == "ascii_to_binary":
+                result = BinaryCipher.ascii_to_binary(text)
+            elif variant == "binary_to_ascii":
+                result = BinaryCipher.binary_to_ascii(text)
+            else:
+                result = "Invalid conversion type"
+            return result
+        except Exception as e:
+            error_msg = f"Conversion error: {str(e)}"
+            return error_msg
+
+    def zoom_in(self):
+        """Increase output text font size by 1"""
+        self.output_font_size += 1
+        self.output_text_area.configure(font=('Courier', self.output_font_size))
+    
+    def zoom_out(self):
+        """Decrease output text font size by 1"""
+        if self.output_font_size > 6:  # Minimum font size of 6
+            self.output_font_size -= 1
+            self.output_text_area.configure(font=('Courier', self.output_font_size))
+
+    def create_footer(self):
+        self.footer_frame = tk.Frame(self.root, bg=Theme.get_color('primary'), height=30)
+        self.footer_frame.pack(side='bottom', fill='x')
+        self.footer_frame.pack_propagate(False)
+        self.status_label = tk.Label(self.footer_frame, 
+                                    text="Ready - Select a cipher to begin",
+                                    bg=Theme.get_color('primary'),
+                                    fg=Theme.get_color('text_primary'),
+                                    font=('Arial', 9),
+                                    anchor='w')
+        self.status_label.pack(side='left', padx=10, pady=5)
+        theme_frame = tk.Frame(self.footer_frame, bg=Theme.get_color('primary'))
+        theme_frame.pack(side='right', padx=10, pady=5)
+        tk.Label(theme_frame, text="Theme:", 
+                bg=Theme.get_color('primary'),
+                fg=Theme.get_color('text_primary'),
+                font=('Arial', 9)).pack(side='left', padx=(0, 5))
+        self.theme_combo = ttk.Combobox(theme_frame, 
+                                  textvariable=self.theme_var,
+                                  values=Theme.get_available_themes(),
+                                  state='readonly',
+                                  width=10,
+                                  font=('Arial', 9))
+        self.theme_combo.pack(side='left')
+        self.theme_combo.bind('<<ComboboxSelected>>', self.on_theme_change)
+
+    def apply_theme(self):
+        def update_widget_colors(widget):
+            try:
+                if isinstance(widget, tk.Label):
+                    if widget.cget('bg') == Theme.get_color('secondary'):
+                        widget.configure(bg=Theme.get_color('secondary'))
+                    else:
+                        widget.configure(bg=Theme.get_color('primary'))
+                elif isinstance(widget, tk.Frame):
+                    if widget.cget('bg') == Theme.get_color('secondary'):
+                        widget.configure(bg=Theme.get_color('secondary'))
+                    else:
+                        widget.configure(bg=Theme.get_color('primary'))
+            except tk.TclError:
+                pass
+            for child in widget.winfo_children():
+                update_widget_colors(child)
+        update_widget_colors(self.root)
+        # Update footer colors
+        if self.status_label is not None:
+            self.status_label.configure(bg=Theme.get_color('primary'), fg=Theme.get_color('text_primary'))
+        if self.footer_frame is not None:
+            self.footer_frame.configure(bg=Theme.get_color('primary'))
+        if self.theme_combo is not None:
+            self.theme_combo.configure(background=Theme.get_color('primary'), foreground=Theme.get_color('text_primary'))
+
+    def on_theme_change(self, event=None):
+        """Handle theme change from the theme combo box."""
+        Theme.set_theme(self.theme_var.get())
+        self.apply_theme()
+
+
+def main():
+    """Main function to run the crypto application"""
+    root = tk.Tk()
+    app = CryptoMainWindow(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main() 
