@@ -54,7 +54,11 @@ else
 fi
 
 print_status "Installing Python libraries from requirements.txt..."
-python3 -m pip install --upgrade pip
+if ! python3 -m pip install --upgrade pip; then
+    echo "[!] pip upgrade failed. Retrying with --break-system-packages..."
+    python3 -m pip install --break-system-packages --upgrade pip
+fi
+
 if ! python3 -m pip install -r requirements.txt; then
     echo "[!] Standard pip install failed. Retrying with --break-system-packages..."
     python3 -m pip install --break-system-packages -r requirements.txt
