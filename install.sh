@@ -53,23 +53,18 @@ else
     print_success "hash-identifier: Found"
 fi
 
-print_status "Installing Python libraries from requirements.txt..."
-if ! python3 -m pip install --upgrade pip; then
-    echo "[!] pip upgrade failed. Retrying with --break-system-packages..."
-    python3 -m pip install --break-system-packages --upgrade pip
+print_status "Setting up Python virtual environment..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
 fi
+source venv/bin/activate
 
-if ! python3 -m pip install -r requirements.txt; then
-    echo "[!] Standard pip install failed. Retrying with --break-system-packages..."
-    python3 -m pip install --break-system-packages -r requirements.txt
-fi
+print_status "Upgrading pip in the virtual environment..."
+pip install --upgrade pip
 
-# Ensure critical packages are installed and visible
-python3 -m pip uninstall -y scikit-image pypng pycryptodome || true
-python3 -m pip install --break-system-packages scikit-image pypng pycryptodome
-
-echo -e "\033[1;33m[!] If you run the app with sudo, you may need to set PYTHONPATH to your user site-packages.\033[0m"
-echo -e "\033[1;33m[!] Example: sudo PYTHONPATH=\$PYTHONPATH:/home/$USER/.local/lib/python3.13/site-packages python3 main.py\033[0m"
+print_status "Installing Python libraries from requirements.txt into the virtual environment..."
+pip install -r requirements.txt
+pip install scikit-image pypng pycryptodome
 
 print_status "Verifying dependencies..."
 for tool in tesseract steghide exiftool binwalk hashcat zsteg; do
@@ -119,13 +114,11 @@ EOF
     print_success "Desktop shortcut created"
 fi
 
-echo ""
-print_success "Installation completed successfully!"
-echo ""
-echo "🚀 To run DemoAnalyzer:"
-echo "   ./demoanalyzer.py"
-echo ""
-echo "📖 For more information, see README.md"
+echo -e "\033[1;32m[!] Installation complete!\033[0m"
+echo -e "\033[1;33m[!] To use the toolkit, activate the virtual environment first:\033[0m"
+echo -e "\033[1;32msource venv/bin/activate\033[0m"
+echo -e "\033[1;33m[!] Then run your app as normal:\033[0m"
+echo -e "\033[1;32mpython main.py\033[0m"
 
 # Auto-detect Python version
 PYMAJOR=$(python3 -c 'import sys; print(sys.version_info.major)')
