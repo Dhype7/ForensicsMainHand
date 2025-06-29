@@ -1,4 +1,4 @@
-# DemoAnalyzer 🔍
+# ForensicsMainHand 🔍
 
 > **Credit:** Project by Dhype7 (NYX team)
 
@@ -12,7 +12,7 @@ A comprehensive digital forensics toolkit with a modern GUI, designed for image,
 Clone the repository:
 ```bash
 git clone https://github.com/YOUR-USERNAME/YOUR-PRIVATE-REPO.git
-cd DemoAnalyzer
+cd ForensicsMainHand
 ```
 
 ### 2. Install (Recommended)
@@ -146,32 +146,63 @@ You can customize the interface by modifying:
 ## 📁 Project Structure
 
 ```
-DemoAnalyzer/
-├── src/
-│   ├── main.py                 # Main application entry point
-│   ├── ui/
-│   │   ├── __init__.py
-│   │   ├── main_window.py      # Main GUI window
-│   │   ├── theme.py           # UI theme configuration
-│   │   └── widgets.py         # Custom widgets
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── exif_analyzer.py   # EXIF data analysis
-│   │   ├── location_analyzer.py # GPS and location analysis
-│   │   ├── steganography.py   # Steghide integration
-│   │   ├── metadata_analyzer.py # ExifTool analysis
-│   │   ├── string_analyzer.py # String extraction
-│   │   └── binwalk_analyzer.py # Binwalk analysis
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── file_utils.py      # File handling utilities
-│   │   └── validation.py      # Input validation
-│   └── config/
-│       ├── __init__.py
-│       └── settings.py        # Application settings
-├── requirements.txt           # Python dependencies
-├── README.md                 # This file
-└── LICENSE                   # License information
+ForensicsMainHand/
+├── main.py                      # Main application entry point
+├── requirements.txt             # Python dependencies
+├── install.sh                   # Installation script
+├── README.md                    # This file
+├── LICENSE                      # License information
+└── src/
+    ├── __init__.py
+    ├── config/
+    │   ├── __init__.py
+    │   └── settings.py          # Application settings
+    ├── core/
+    │   ├── exif_analyzer.py     # EXIF data analysis
+    │   ├── location_analyzer.py # GPS and location analysis
+    │   ├── string_analyzer.py   # String extraction
+    │   └── zsteg_analyzer.py    # Zsteg analysis
+    ├── forensics_main.py        # Main forensics application
+    ├── forensics_toolkit.py     # Forensics toolkit
+    ├── modules/
+    │   ├── __init__.py
+    │   ├── cryptography/
+    │   │   ├── __init__.py
+    │   │   ├── advanced_crypto.py      # Advanced cryptography module
+    │   │   ├── classical_ciphers.py    # Classical ciphers
+    │   │   ├── classical_crypto_gui.py # Classical crypto GUI
+    │   │   └── crypto_main.py          # Main crypto application
+    │   ├── file_analyzer/
+    │   │   ├── __init__.py
+    │   │   └── file_main.py            # File analyzer module
+    │   └── photo_analyzer/
+    │       ├── __init__.py
+    │       ├── binwalk_analyzer.py     # Binwalk analysis
+    │       ├── crypto_analyzer.py      # Crypto analysis
+    │       ├── exif_analyzer.py        # EXIF analysis
+    │       ├── file_carving_analyzer.py # File carving
+    │       ├── file_utils.py           # File utilities
+    │       ├── hex_viewer.py           # Hex viewer
+    │       ├── location_analyzer.py    # Location analysis
+    │       ├── main_window.py          # Photo analyzer main window
+    │       ├── metadata_analyzer.py    # Metadata analysis
+    │       ├── ocr_analyzer.py         # OCR analysis
+    │       ├── qr_barcode_analyzer.py  # QR/Barcode analysis
+    │       ├── settings.py             # Settings
+    │       ├── steganography.py        # Steganography
+    │       ├── string_analyzer.py      # String analysis
+    │       ├── theme.py                # Theme configuration
+    │       ├── validation.py           # Validation utilities
+    │       ├── widgets.py              # Custom widgets
+    │       └── zsteg_analyzer.py       # Zsteg analysis
+    ├── ui/
+    │   ├── __init__.py
+    │   ├── theme.py                    # UI theme configuration
+    │   └── widgets.py                  # Custom widgets
+    └── utils/
+        ├── __init__.py
+        ├── file_utils.py               # File handling utilities
+        └── validation.py               # Input validation
 ```
 
 ## 🎯 Use Cases
@@ -196,13 +227,9 @@ For more information, see the code and comments, or open an issue.
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📝 License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -212,11 +239,4 @@ This tool is designed for educational and legitimate security analysis purposes 
 
 ## 📞 Support
 
-For issues and questions:
-1. Check the troubleshooting section
-2. Review existing issues
-3. Create a new issue with detailed information
-
----
-
-**Made with ❤️ for the security community** 
+For support, please open an issue on GitHub or contact the development team. 
