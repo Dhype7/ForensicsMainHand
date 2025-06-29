@@ -6,204 +6,226 @@ A comprehensive digital forensics toolkit with a modern GUI, designed for image,
 
 ---
 
-## 📥 How to Download, Install, and Run
+## 🚀 Quick Start
 
 ### 1. Download
-Clone the repository:
 ```bash
 git clone https://github.com/Dhype7/ForensicsMainHand.git
 cd ForensicsMainHand
 ```
 
-### 2. Install (Recommended)
-Run the provided installation script to install **all system tools and Python libraries**:
+### 2. Install (One Command)
 ```bash
-chmod +x install.sh
 sudo ./install.sh
 ```
-This will install all dependencies: Python libraries, tesseract-ocr, steghide, exiftool, binwalk, zsteg (Ruby gem), hashcat, hash-identifier/hashid, and more.
+This automatically installs all dependencies and sets up the environment.
 
 ### 3. Run
 ```bash
-sudo python3 main.py
+./run.sh
 ```
+Or use the desktop shortcut created during installation.
+
+---
+
+## 📥 Detailed Installation Guide
+
+### Prerequisites
+- **Operating System**: Kali Linux (recommended) or any Debian/Ubuntu-based Linux distribution
+- **Python**: 3.8 or higher (automatically installed by the script)
+- **Root Access**: Required for installing system tools
+
+### Automatic Installation (Recommended)
+The `install.sh` script handles everything automatically:
+
+```bash
+# 1. Make the script executable
+chmod +x install.sh
+
+# 2. Run the installation (requires sudo)
+sudo ./install.sh
+```
+
+**What the installer does:**
+- Updates package repositories
+- Installs system tools: `tesseract-ocr`, `steghide`, `exiftool`, `binwalk`, `hashcat`, `zsteg`, `hash-identifier`
+- Creates Python virtual environment
+- Installs all Python dependencies from `requirements.txt`
+- Sets up desktop shortcut
+- Verifies all installations
+
+### Manual Installation (Advanced Users)
+If you prefer manual installation, you'll need to install:
+
+**System Tools:**
+```bash
+sudo apt update
+sudo apt install -y python3 python3-pip python3-tk python3-pil.imagetk tesseract-ocr steghide exiftool binwalk hashcat hash-identifier ruby-full
+sudo gem install zsteg
+```
+
+**Python Dependencies:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+---
+
+## 🎯 How to Run
+
+### Method 1: Using the Launcher Script (Recommended)
+```bash
+./run.sh
+```
+This script automatically:
+- Activates the virtual environment
+- Checks for required files
+- Launches the application
+
+### Method 2: Desktop Shortcut
+After installation, a desktop shortcut is created. Simply double-click it to run.
+
+### Method 3: Manual Launch
+```bash
+source venv/bin/activate
+python main.py
+```
+
+### Method 4: Direct Python Execution
+```bash
+python3 main.py
+```
+*Note: This requires all dependencies to be installed system-wide.*
 
 ---
 
 ## 🌟 Features
 
 ### 🖼️ Photo Analyzer
-- **EXIF Data Extraction**: Device info, timestamps, GPS
-- **Location Analysis**: Reverse geocoding of coordinates
-- **Metadata Analysis**: Deep metadata with ExifTool
+- **EXIF Data Extraction**: Device info, timestamps, GPS coordinates
+- **Location Analysis**: Reverse geocoding with address lookup
+- **Metadata Analysis**: Comprehensive metadata with ExifTool
 - **String Extraction**: Find readable strings in files
 - **Binwalk Integration**: Hidden file and binary analysis
 - **Steghide Integration**: Hide/extract data in images
-- **OCR**: Extract text from images (Tesseract)
-- **QR/Barcode Analysis**: Decode embedded codes
-- **File Carving**: Recover embedded files
-- **Hex Viewer**: Inspect file bytes visually
+- **OCR**: Extract text from images using Tesseract
+- **QR/Barcode Analysis**: Decode embedded QR codes and barcodes
+- **File Carving**: Recover embedded files from binary data
+- **Hex Viewer**: Visual byte-level file inspection
 
 ### 🔐 Cryptography Module
-- **Classical Ciphers**: Affine, Atbash, Bacon, Caesar, Playfair, Rail Fence, Rot13, Scytale, Substitution, Vigenère, XOR, Binary, and more (encrypt/decrypt, file input/output, parameter presets)
-- **Advanced Crypto**: RSA, AES, Blowfish, DES, RC4, OTP, Base64/32/16, SHA-256, MD5, HMAC, Substitution, Playfair, Rail Fence, XOR, and more
-- **Magic Hasher**: Identify hash types (hash-identifier/hashid) and crack hashes with hashcat from the GUI
-- **Modern UI**: Split view for classical/advanced crypto, user-friendly grid, back navigation
-- **File Import/Export**: Work with text or files
-- **Dynamic Parameters**: Only relevant options shown
-- **Status Bar**: Real-time feedback and error handling
+- **Classical Ciphers**: Affine, Atbash, Bacon, Caesar, Playfair, Rail Fence, Rot13, Scytale, Substitution, Vigenère, XOR, Binary, and more
+- **Advanced Crypto**: RSA, AES, Blowfish, DES, RC4, OTP, Base64/32/16, SHA-256, MD5, HMAC
+- **Magic Hasher**: Identify hash types and crack hashes with hashcat integration
+- **Modern UI**: Split view for classical/advanced crypto, user-friendly interface
+- **File Import/Export**: Work with text files or binary files
+- **Dynamic Parameters**: Context-sensitive options
+- **Real-time Feedback**: Status bar with progress and error handling
 
 ### 📁 File Analyzer
 - **File Carving**: Recover files from binary blobs
-- **String Analysis**: Extract readable strings
-- **Binary Analysis**: Inspect file structure
-- **Format Detection**: Identify file types
+- **String Analysis**: Extract readable strings with encoding detection
+- **Binary Analysis**: Inspect file structure and headers
+- **Format Detection**: Identify file types and signatures
 
 ### 🎨 Modern GUI
-- **Dark/Light Theme**: Professional, switchable
-- **Intuitive Layout**: User-friendly, clear sections
-- **Real-time Results**: Instant feedback
-- **File Browser**: Easy file selection
-- **Accessibility**: Clear fonts, good contrast
+- **Dark/Light Theme**: Professional themes with easy switching
+- **Intuitive Layout**: User-friendly interface with clear sections
+- **Real-time Results**: Instant feedback and progress indicators
+- **File Browser**: Easy file selection with drag-and-drop support
+- **Accessibility**: Clear fonts, good contrast, keyboard navigation
 
-## 🚀 Installation
+---
 
-### Prerequisites
-- Python 3.8 or higher
-- Kali Linux (recommended) or any Linux distribution
-- **Required system tools:**
-  - `tesseract-ocr`, `steghide`, `exiftool`, `binwalk`, `zsteg` (Ruby gem), `hashcat`, `hash-identifier` (or `hashid`), `ruby-full` (for zsteg)
+## 📖 Usage Guide
 
-### Install All Dependencies (Recommended)
-```bash
-chmod +x install.sh
-sudo ./install.sh
-```
+### Getting Started
+1. **Launch the Application**: Run `./run.sh` or use the desktop shortcut
+2. **Select a File**: Click "Select Image" or enter a file path
+3. **Choose Analysis**: Select the type of analysis you want to perform
+4. **View Results**: Results appear in real-time in the interface
 
-### Manual Installation (Not Recommended)
-You must install all system tools and Python libraries yourself. See `install.sh` for the full list.
+### Common Use Cases
 
-## 📖 Usage
+#### Image Analysis
+1. Load an image file
+2. Use "EXIF Data" to extract metadata
+3. Use "Location" to get GPS coordinates and address
+4. Use "Steganography" to check for hidden data
 
-### Basic Usage
-```bash
-sudo python3 main.py
-```
+#### Cryptography
+1. Navigate to the Cryptography module
+2. Choose between Classical or Advanced crypto
+3. Select your cipher/algorithm
+4. Enter text or load a file
+5. Use Magic Hasher for hash identification and cracking
 
-### Features Guide
+#### File Forensics
+1. Load any file type
+2. Use "String Analysis" to extract readable text
+3. Use "Binwalk" to find embedded files
+4. Use "Hex Viewer" for byte-level analysis
 
-#### 1. Image Selection
-- Click "Select Image" to browse and load an image
-- Or enter the file path directly in the text field
-
-#### 2. EXIF Analysis
-- **Simple Data**: Extract basic EXIF information
-- **Location**: Extract GPS coordinates and address information
-
-#### 3. Steganography
-- **Inject Text**: Hide text messages in images
-- **Inject File**: Hide files within images
-- **Extract**: Extract hidden data from images
-
-#### 4. Advanced Analysis
-- **Detail ExifTool**: Comprehensive metadata analysis
-- **Show All Strings**: Extract readable strings from files
-- **Binwalk**: Advanced file analysis and hidden file extraction
-
-#### 5. Cryptography
-- **Classical/Advanced Split**: Choose between classical and advanced crypto
-- **Magic Hasher**: Identify hash types and crack hashes with hashcat from the GUI
+---
 
 ## 🛠️ System Requirements
 
-### Required System Tools
-- **tesseract-ocr**: OCR engine
-- **steghide**: Steganography tool for hiding data in images
+### Required System Tools (Auto-installed)
+- **tesseract-ocr**: OCR engine for text extraction
+- **steghide**: Steganography tool for data hiding/extraction
 - **exiftool**: Metadata extraction and manipulation
 - **binwalk**: Binary analysis and hidden file extraction
-- **zsteg**: PNG/BMP steganography analysis (Ruby gem)
+- **zsteg**: PNG/BMP steganography analysis
 - **hashcat**: Password/hash cracking
-- **hash-identifier** or **hashid**: Hash type identification
+- **hash-identifier**: Hash type identification
 - **ruby-full**: Required for zsteg
 
-### Python Dependencies
-- See `requirements.txt` for the full list (includes Pillow, geopy, tkinter-tooltip, cryptography, pycryptodome, numpy, opencv-python, matplotlib, scikit-image, pytesseract, pypng, pyzbar, qrcode, stegano, exifread, etc.)
+### Python Dependencies (Auto-installed)
+- **Core**: Pillow, numpy, opencv-python, matplotlib
+- **Forensics**: pytesseract, exifread, stegano, pyzbar
+- **Cryptography**: cryptography, pycryptodome
+- **Utilities**: geopy, qrcode, pypng, requests
+- **GUI**: tkinter-tooltip
+
+---
 
 ## 🔧 Configuration
 
-### Kali Linux Specific
-The tool is optimized for Kali Linux and includes:
-- Automatic tool detection
-- Proper file permissions handling
-- Integration with Kali's security tools
+### Theme Customization
+Edit `src/ui/theme.py` to customize colors and appearance.
 
-### Customization
-You can customize the interface by modifying:
-- Color schemes in `src/ui/theme.py`
-- Tool configurations in `src/config/settings.py`
-- Analysis parameters in respective modules
+### Tool Configuration
+Modify `src/config/settings.py` to adjust analysis parameters.
+
+### Adding Custom Tools
+Extend the toolkit by adding new modules in the `src/modules/` directory.
+
+---
 
 ## 📁 Project Structure
 
 ```
 ForensicsMainHand/
 ├── main.py                      # Main application entry point
-├── requirements.txt             # Python dependencies
+├── run.sh                       # Launcher script (NEW!)
 ├── install.sh                   # Installation script
+├── requirements.txt             # Python dependencies
 ├── README.md                    # This file
 ├── LICENSE                      # License information
 └── src/
-    ├── __init__.py
-    ├── config/
-    │   ├── __init__.py
-    │   └── settings.py          # Application settings
-    ├── core/
-    │   ├── exif_analyzer.py     # EXIF data analysis
-    │   ├── location_analyzer.py # GPS and location analysis
-    │   ├── string_analyzer.py   # String extraction
-    │   └── zsteg_analyzer.py    # Zsteg analysis
-    ├── forensics_main.py        # Main forensics application
-    ├── forensics_toolkit.py     # Forensics toolkit
-    ├── modules/
-    │   ├── __init__.py
-    │   ├── cryptography/
-    │   │   ├── __init__.py
-    │   │   ├── advanced_crypto.py      # Advanced cryptography module
-    │   │   ├── classical_ciphers.py    # Classical ciphers
-    │   │   ├── classical_crypto_gui.py # Classical crypto GUI
-    │   │   └── crypto_main.py          # Main crypto application
-    │   ├── file_analyzer/
-    │   │   ├── __init__.py
-    │   │   └── file_main.py            # File analyzer module
-    │   └── photo_analyzer/
-    │       ├── __init__.py
-    │       ├── binwalk_analyzer.py     # Binwalk analysis
-    │       ├── crypto_analyzer.py      # Crypto analysis
-    │       ├── exif_analyzer.py        # EXIF analysis
-    │       ├── file_carving_analyzer.py # File carving
-    │       ├── file_utils.py           # File utilities
-    │       ├── hex_viewer.py           # Hex viewer
-    │       ├── location_analyzer.py    # Location analysis
-    │       ├── main_window.py          # Photo analyzer main window
-    │       ├── metadata_analyzer.py    # Metadata analysis
-    │       ├── ocr_analyzer.py         # OCR analysis
-    │       ├── qr_barcode_analyzer.py  # QR/Barcode analysis
-    │       ├── settings.py             # Settings
-    │       ├── steganography.py        # Steganography
-    │       ├── string_analyzer.py      # String analysis
-    │       ├── theme.py                # Theme configuration
-    │       ├── validation.py           # Validation utilities
-    │       ├── widgets.py              # Custom widgets
-    │       └── zsteg_analyzer.py       # Zsteg analysis
-    ├── ui/
-    │   ├── __init__.py
-    │   ├── theme.py                    # UI theme configuration
-    │   └── widgets.py                  # Custom widgets
-    └── utils/
-        ├── __init__.py
-        ├── file_utils.py               # File handling utilities
-        └── validation.py               # Input validation
+    ├── config/                  # Configuration files
+    ├── core/                    # Core analysis modules
+    ├── modules/                 # Feature modules
+    │   ├── cryptography/        # Cryptography tools
+    │   ├── file_analyzer/       # File analysis
+    │   └── photo_analyzer/      # Image analysis
+    ├── ui/                      # User interface
+    └── utils/                   # Utility functions
 ```
+
+---
 
 ## 🎯 Use Cases
 
@@ -211,32 +233,90 @@ ForensicsMainHand/
 - Extract metadata from evidence images
 - Analyze GPS coordinates for location tracking
 - Detect hidden data in suspicious files
+- Perform file carving on binary evidence
 
 ### CTF Challenges
-- Solve steganography, cryptography, and hash cracking challenges
-- Use Magic Hasher for hash identification and automated cracking
+- Solve steganography challenges
+- Crack classical and modern ciphers
+- Identify and crack hash types
+- Analyze binary files for hidden data
 
-## ⚠️ Troubleshooting
-- If `hashcat` or `hash-identifier` are not found, ensure they are installed and in your PATH. On some systems, you may need to install `hashid` via pip as a fallback.
-- For `zsteg`, ensure Ruby and the `zsteg` gem are installed.
-- If you encounter missing Python modules, re-run `install.sh` or manually install from `requirements.txt`.
+### Security Research
+- Analyze suspicious images and files
+- Extract embedded data and metadata
+- Perform cryptographic analysis
+- Reverse engineer file formats
 
 ---
 
-For more information, see the code and comments, or open an issue.
+## ⚠️ Troubleshooting
+
+### Common Issues
+
+**Installation Problems:**
+```bash
+# If install.sh fails, try:
+sudo apt update
+sudo apt install -y python3-venv
+sudo ./install.sh
+```
+
+**Missing Dependencies:**
+```bash
+# Re-run installation
+sudo ./install.sh
+
+# Or manually install Python packages
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Permission Issues:**
+```bash
+# Make scripts executable
+chmod +x install.sh run.sh
+```
+
+**GUI Issues:**
+- Ensure you're running in a graphical environment
+- Install `python3-tk` if tkinter is missing
+- Try running with `DISPLAY=:0 ./run.sh`
+
+### Getting Help
+1. Check the troubleshooting section above
+2. Review the installation logs
+3. Open an issue on GitHub with error details
+4. Ensure all system requirements are met
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## ⚠️ Disclaimer
 
-This tool is designed for educational and legitimate security analysis purposes only. Users are responsible for ensuring they have proper authorization before analyzing any files or images.
+This tool is designed for educational and legitimate security analysis purposes only. Users are responsible for ensuring they have proper authorization before analyzing any files or images. Always comply with local laws and regulations.
+
+---
 
 ## 📞 Support
 
-For support, please open an issue on GitHub or contact the development team. 
+- **GitHub Issues**: Open an issue for bugs or feature requests
+- **Documentation**: Check this README and code comments
+- **Community**: Join discussions in the repository
+
+**Happy Forensics! 🔍** 
