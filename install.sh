@@ -55,7 +55,10 @@ fi
 
 print_status "Installing Python libraries from requirements.txt..."
 python3 -m pip install --upgrade pip
-python3 -m pip install --break-system-packages -r requirements.txt
+if ! python3 -m pip install -r requirements.txt; then
+    echo "[!] Standard pip install failed. Retrying with --break-system-packages..."
+    python3 -m pip install --break-system-packages -r requirements.txt
+fi
 
 print_status "Verifying dependencies..."
 for tool in tesseract steghide exiftool binwalk hashcat zsteg; do
