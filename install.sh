@@ -55,7 +55,7 @@ fi
 
 print_status "Installing Python libraries from requirements.txt..."
 pip3 install --upgrade pip
-pip3 install -r requirements.txt
+pip3 install --break-system-packages -r requirements.txt
 
 print_status "Verifying dependencies..."
 for tool in tesseract steghide exiftool binwalk hashcat zsteg; do
