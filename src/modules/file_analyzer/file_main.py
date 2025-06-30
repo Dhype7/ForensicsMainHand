@@ -16,11 +16,13 @@ from ui.widgets import ModernButton, FileSelector, StatusBar, ToolButton
 from config.settings import Settings
 from .file_utils import FileAnalyzerUtils
 
-class FileAnalyzerMainWindow:
-    """Main application window for File Analyzer (CTF style)"""
-    def __init__(self, root: Union[tk.Tk, tk.Toplevel]) -> None:
-        self.root = root
+class FileAnalyzerMainWindow(tk.Frame):
+    """Main application frame for File Analyzer (CTF style)"""
+    def __init__(self, parent, back_callback: Callable[[], None], *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.back_callback = back_callback
         self.selected_file_path: Optional[str] = None
+        self.selected_wordlist_path: Optional[str] = None
         self.result_text: tk.Text
         self.status_bar: StatusBar
         self.file_selector: Optional[FileSelector] = None
@@ -34,28 +36,13 @@ class FileAnalyzerMainWindow:
         self.spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self.spinner_index = 0
         self.loading_after_id = None
-        self.setup_window()
+        self.tool_buttons = []
         self.create_widgets()
         self.setup_layout()
         self.apply_theme_to_all_widgets()
 
-    def setup_window(self):
-        self.root.title(f"File Analyzer - {Settings.APP_NAME} v{Settings.APP_VERSION}")
-        self.root.geometry("1100x700")
-        self.root.minsize(800, 500)
-        self.root.configure(bg=Theme.get_color('primary'))
-        self.center_window()
-
-    def center_window(self):
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
-
     def create_widgets(self):
-        self.main_frame = tk.Frame(self.root, bg=Theme.get_color('primary'))
+        self.main_frame = tk.Frame(self, bg=Theme.get_color('primary'))
         self.main_frame.pack(fill='both', expand=True, padx=Theme.get_spacing('medium'), pady=Theme.get_spacing('medium'))
         self.create_header()
         self.create_file_selection()
@@ -65,6 +52,9 @@ class FileAnalyzerMainWindow:
     def create_header(self):
         header_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
         header_frame.pack(fill='x', pady=(0, Theme.get_spacing('large')))
+        # Back button
+        back_btn = ModernButton(header_frame, text="← Back", command=self.back_callback, style='secondary')
+        back_btn.pack(side='left', padx=(0, 10))
         title_label = tk.Label(header_frame, text="File Analyzer", font=Theme.get_font('title'), bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
         title_label.pack(side='left')
         theme_label = tk.Label(header_frame, text="Theme:", bg=Theme.get_color('primary'), fg=Theme.get_color('text_secondary'), font=Theme.get_font('default'))
@@ -102,23 +92,73 @@ class FileAnalyzerMainWindow:
         tools_grid = tk.Frame(tools_frame, bg=Theme.get_color('primary'))
         tools_grid.pack(fill='x')
         # Row 1
-        ToolButton(tools_grid, text="Type Detection", description="Detect file type (magic)", command=self.analyze_type, icon="📄").grid(row=0, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="Extract Archive", description="Extract files from archives", command=self.analyze_extract, icon="🗜️").grid(row=0, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="Compress File", description="Compress file to archive", command=self.analyze_compress, icon="📦").grid(row=0, column=2, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        btn1 = ToolButton(tools_grid, text="Type Detection", description="Detect file type (magic)", command=self.analyze_type, icon="📄")
+        btn1.grid(row=0, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn1, "Detect file type using magic bytes and mimetypes")
+        self.tool_buttons.append(btn1)
+        btn2 = ToolButton(tools_grid, text="Extract Archive", description="Extract files from archives", command=self.analyze_extract, icon="🗜️")
+        btn2.grid(row=0, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn2, "Extract all files from supported archive formats")
+        self.tool_buttons.append(btn2)
+        btn3 = ToolButton(tools_grid, text="Compress File", description="Compress file to archive", command=self.analyze_compress, icon="📦")
+        btn3.grid(row=0, column=2, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn3, "Compress file or folder to archive")
+        self.tool_buttons.append(btn3)
         # Row 2
-        ToolButton(tools_grid, text="String Extraction", description="Extract readable strings", command=self.analyze_strings, icon="🔍").grid(row=1, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="File Carving", description="Carve files from binary", command=self.analyze_carve, icon="🪓").grid(row=1, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="Metadata Analysis", description="Extract file metadata", command=self.analyze_metadata, icon="📋").grid(row=1, column=2, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        btn4 = ToolButton(tools_grid, text="String Extraction", description="Extract readable strings", command=self.analyze_strings, icon="🔍")
+        btn4.grid(row=1, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn4, "Extract printable strings from file")
+        self.tool_buttons.append(btn4)
+        btn5 = ToolButton(tools_grid, text="File Carving", description="Carve files from binary", command=self.analyze_carve, icon="🪓")
+        btn5.grid(row=1, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn5, "Carve embedded files from binary data")
+        self.tool_buttons.append(btn5)
+        btn6 = ToolButton(tools_grid, text="Metadata Analysis", description="Extract file metadata", command=self.analyze_metadata, icon="📋")
+        btn6.grid(row=1, column=2, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn6, "Extract metadata from file")
+        self.tool_buttons.append(btn6)
         # Row 3
-        ToolButton(tools_grid, text="Entropy Analysis", description="Detect packed/obfuscated data", command=self.analyze_entropy, icon="📊").grid(row=2, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="Stego Analysis", description="Detect steganography", command=self.analyze_stego, icon="🕵️").grid(row=2, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="Ciphey Magic", description="Auto-decode/auto-decrypt", command=self.analyze_ciphey, icon="✨").grid(row=2, column=2, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        btn7 = ToolButton(tools_grid, text="Entropy Analysis", description="Detect packed/obfuscated data", command=self.analyze_entropy, icon="📊")
+        btn7.grid(row=2, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn7, "Analyze file entropy for packing/obfuscation")
+        self.tool_buttons.append(btn7)
+        btn8 = ToolButton(tools_grid, text="Stego Analysis", description="Detect steganography", command=self.analyze_stego, icon="🕵️")
+        btn8.grid(row=2, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn8, "Detect steganography in files")
+        self.tool_buttons.append(btn8)
+        btn9 = ToolButton(tools_grid, text="Ciphey Magic", description="Auto-decode/auto-decrypt", command=self.analyze_ciphey, icon="✨")
+        btn9.grid(row=2, column=2, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn9, "Auto-decode/auto-decrypt using Ciphey")
+        self.tool_buttons.append(btn9)
         # Row 4
-        ToolButton(tools_grid, text="Recursive Extraction", description="Extract files recursively", command=self.analyze_recursive, icon="🔁").grid(row=3, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
-        ToolButton(tools_grid, text="CTF Auto-Analyze", description="Run all CTF-relevant analyses", command=self.ctf_auto_analyze, icon="🚀").grid(row=3, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        btn10 = ToolButton(tools_grid, text="Recursive Extraction", description="Extract files recursively", command=self.analyze_recursive, icon="🔁")
+        btn10.grid(row=3, column=0, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn10, "Recursively extract nested archives")
+        self.tool_buttons.append(btn10)
+        btn11 = ToolButton(tools_grid, text="CTF Auto-Analyze", description="Run all CTF-relevant analyses", command=self.ctf_auto_analyze, icon="🚀")
+        btn11.grid(row=3, column=1, padx=Theme.get_spacing('small'), pady=Theme.get_spacing('small'), sticky='ew')
+        self.add_tooltip(btn11, "Run all CTF-relevant analyses automatically")
+        self.tool_buttons.append(btn11)
         tools_grid.columnconfigure(0, weight=1)
         tools_grid.columnconfigure(1, weight=1)
         tools_grid.columnconfigure(2, weight=1)
+        # Add Select Wordlist button
+        wordlist_btn = ModernButton(tools_frame, text="Select Wordlist", command=self.select_wordlist, style='secondary')
+        wordlist_btn.pack(pady=(Theme.get_spacing('small'), 0))
+        self.add_tooltip(wordlist_btn, "Select a wordlist for password cracking (John the Ripper)")
+
+    def add_tooltip(self, widget, text: str):
+        try:
+            import tkinter.ttk as ttk
+            if hasattr(widget, 'bind'):
+                def on_enter(event):
+                    self.status_bar.set_status(text, status_type='info')
+                def on_leave(event):
+                    self.status_bar.set_status("", status_type='info')
+                widget.bind('<Enter>', on_enter)
+                widget.bind('<Leave>', on_leave)
+        except Exception:
+            pass
 
     def create_results_area(self, parent):
         self.result_frame = tk.Frame(parent, bg=Theme.get_color('secondary'), bd=3, relief='raised', highlightthickness=1, highlightbackground=Theme.get_color('accent'))
@@ -130,6 +170,10 @@ class FileAnalyzerMainWindow:
         title_label.pack(side='left', padx=10, pady=5)
         controls_frame = tk.Frame(header_frame, bg=Theme.get_color('accent'))
         controls_frame.pack(side='right', padx=10, pady=5)
+        # Save Results button
+        save_btn = tk.Button(controls_frame, text="💾 Save Results", command=self.save_results, font=('Segoe UI', 10, 'bold'), bg=Theme.get_color('success'), fg='white', relief='flat', bd=0, padx=10, pady=3, cursor='hand2')
+        save_btn.pack(side='right', padx=(0, 5))
+        self.add_tooltip(save_btn, "Save the current analysis results to a text file")
         search_frame = tk.Frame(self.result_frame, bg=Theme.get_color('secondary'))
         search_frame.pack(fill='x', padx=10, pady=5)
         search_label = tk.Label(search_frame, text="Search:", font=('Segoe UI', 11, 'bold'), bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
@@ -147,9 +191,13 @@ class FileAnalyzerMainWindow:
         self.result_text = tk.Text(text_container, wrap='word', font=('Consolas', 12), bg=Theme.get_color('text_bg'), fg=Theme.get_color('text_primary'), relief='flat', bd=0)
         self.result_text.pack(fill='both', expand=True)
         self.result_text.config(state='disabled')
+        # Loading overlay (hidden by default)
+        self.loading_overlay = tk.Frame(self.result_frame, bg='#000000')
+        self.loading_label = tk.Label(self.loading_overlay, text="Analyzing...", font=('Segoe UI', 16, 'bold'), fg='white', bg='#000000')
+        self.loading_spinner = tk.Label(self.loading_overlay, text=self.spinner_chars[0], font=('Segoe UI', 32), fg='white', bg='#000000')
 
     def create_status_bar(self):
-        self.status_bar = StatusBar(self.root)
+        self.status_bar = StatusBar(self)
         self.status_bar.pack(fill='x', side='bottom')
 
     def setup_layout(self):
@@ -173,7 +221,7 @@ class FileAnalyzerMainWindow:
                 pass
             for child in widget.winfo_children():
                 update_widget_colors(child)
-        update_widget_colors(self.root)
+        update_widget_colors(self)
 
     def on_theme_change(self, event=None):
         Theme.set_theme(self.theme_var.get())
@@ -206,8 +254,8 @@ class FileAnalyzerMainWindow:
         self.result_text.tag_config('search', background='yellow', foreground='black')
 
     def copy_results(self):
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self.result_text.get('1.0', tk.END))
+        self.clipboard_clear()
+        self.clipboard_append(self.result_text.get('1.0', tk.END))
         self.status_bar.set_status("Results copied to clipboard!", status_type='success')
 
     def clear_results(self):
@@ -275,6 +323,58 @@ class FileAnalyzerMainWindow:
             return
         self.run_analysis(lambda: str(FileAnalyzerUtils.analyze_file(str(self.selected_file_path), 'file_analyzer_output')), "CTF Auto-Analyze")
 
+    def show_loading(self):
+        if self.loading_overlay and self.loading_label and self.loading_spinner:
+            self.loading_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+            self.loading_label.place(relx=0.5, rely=0.4, anchor='center')
+            self.loading_spinner.place(relx=0.5, rely=0.55, anchor='center')
+            self.update_spinner()
+        self.set_tool_buttons_state('disabled')
+
+    def hide_loading(self):
+        if self.loading_overlay and self.loading_label and self.loading_spinner:
+            self.loading_overlay.place_forget()
+            self.loading_label.place_forget()
+            self.loading_spinner.place_forget()
+            if self.loading_after_id:
+                self.after_cancel(self.loading_after_id)
+                self.loading_after_id = None
+        self.set_tool_buttons_state('normal')
+
+    def update_spinner(self):
+        if self.loading_spinner:
+            self.spinner_index = (self.spinner_index + 1) % len(self.spinner_chars)
+            self.loading_spinner.config(text=self.spinner_chars[self.spinner_index])
+            self.loading_after_id = self.after(100, self.update_spinner)
+
+    def set_tool_buttons_state(self, state: str):
+        for btn in self.tool_buttons:
+            if hasattr(btn, 'config'):
+                btn.config(state=state)
+
+    def select_wordlist(self):
+        path = filedialog.askopenfilename(title="Select Wordlist", filetypes=[("Wordlist Files", "*.txt *.lst *wordlist*"), ("All Files", "*.*")])
+        if path:
+            self.selected_wordlist_path = path
+            self.status_bar.set_status(f"Selected wordlist: {os.path.basename(path)}", status_type='info')
+
+    def analyze_crack_password(self):
+        if not self.selected_file_path:
+            return
+        wordlist = self.selected_wordlist_path or '/usr/share/wordlists/rockyou.txt'
+        self.run_analysis(lambda: str(FileAnalyzerUtils.crack_archive_password(str(self.selected_file_path), wordlist)), "Password Crack (John)")
+
+    def save_results(self):
+        result = self.result_text.get('1.0', tk.END)
+        if not result.strip():
+            messagebox.showinfo("Save Results", "No results to save.")
+            return
+        path = filedialog.asksaveasfilename(title="Save Results", defaultextension=".txt", filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")])
+        if path:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(result)
+            self.status_bar.set_status(f"Results saved to {os.path.basename(path)}", status_type='success')
+
     def run_analysis(self, analysis_func: Callable[[], str], label: str):
         if not self.selected_file_path or not os.path.isfile(self.selected_file_path):
             messagebox.showerror("Error", "Please select a valid file to analyze.")
@@ -283,17 +383,16 @@ class FileAnalyzerMainWindow:
         self.result_text.config(state='normal')
         self.result_text.delete('1.0', tk.END)
         self.result_text.config(state='disabled')
-        
+        self.show_loading()
         def run():
             try:
                 result = analysis_func()
-                self.root.after(0, lambda: self.display_results(str(result)))
+                self.after(0, lambda: [self.hide_loading(), self.display_results(str(result))])
             except Exception as e:
-                self.root.after(0, lambda: self.display_error(str(e)))
-        
+                self.after(0, lambda: [self.hide_loading(), self.display_error(str(e))])
         threading.Thread(target=run, daemon=True).start()
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = FileAnalyzerMainWindow(root)
+    app = FileAnalyzerMainWindow(root, lambda: None)
     root.mainloop() 

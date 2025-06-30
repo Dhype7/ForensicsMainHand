@@ -13,6 +13,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
 from ui.theme import Theme
 from ui.widgets import ModernButton
 from config.settings import Settings
+from modules.file_analyzer.file_main import FileAnalyzerMainWindow
+from modules.photo_analyzer.main_window import MainWindow as PhotoAnalyzerMainWindow
+from modules.cryptography.crypto_main import CryptoMainWindow
 
 class ForensicsToolkitWindow:
     """Main forensics toolkit window with three main modules"""
@@ -20,7 +23,9 @@ class ForensicsToolkitWindow:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.theme_var = tk.StringVar(value=Theme.get_current_theme())
-        
+        self.file_analyzer_frame = FileAnalyzerMainWindow(self.root, self.show_main_menu)
+        self.photo_analyzer_frame = PhotoAnalyzerMainWindow(self.root, self.show_main_menu)
+        self.crypto_frame = CryptoMainWindow(self.root, self.show_main_menu)
         self.setup_window()
         self.create_widgets()
         self.setup_layout()
@@ -29,8 +34,8 @@ class ForensicsToolkitWindow:
     def setup_window(self):
         """Setup main window properties"""
         self.root.title(f"{Settings.APP_NAME} - Forensics Toolkit v{Settings.APP_VERSION}")
-        self.root.geometry("800x600")
-        self.root.minsize(600, 400)
+        self.root.geometry("1400x1000")
+        self.root.minsize(1000, 800)
         
         # Configure window
         self.root.configure(bg=Theme.get_color('primary'))
@@ -62,6 +67,11 @@ class ForensicsToolkitWindow:
         
         # Footer
         self.create_footer()
+        
+        # File Analyzer frame (hidden by default)
+        self.file_analyzer_frame.pack_forget()  # type: ignore
+        self.photo_analyzer_frame.pack_forget()  # type: ignore
+        self.crypto_frame.pack_forget()  # type: ignore
         
     def create_header(self):
         """Create application header"""
@@ -249,38 +259,36 @@ class ForensicsToolkitWindow:
         Theme.set_theme(self.theme_var.get())
         self.apply_theme()
         
-    def open_cryptography(self):
-        """Open cryptography module"""
+    def show_main_menu(self):
+        self.file_analyzer_frame.pack_forget()  # type: ignore
+        self.photo_analyzer_frame.pack_forget()  # type: ignore
+        self.crypto_frame.pack_forget()  # type: ignore
+        self.main_frame.pack(fill='both', expand=True, padx=Theme.get_spacing('large'), 
+                           pady=Theme.get_spacing('large'))
+
+    def open_file_analyzer(self):
         try:
-            # Import and open cryptography module
-            from modules.cryptography.crypto_main import CryptoMainWindow
-            crypto_window = tk.Toplevel(self.root)
-            CryptoMainWindow(crypto_window)
-        except ImportError as e:
-            messagebox.showerror("Error", f"Could not load Cryptography module: {str(e)}")
+            self.main_frame.pack_forget()
+            self.photo_analyzer_frame.pack_forget()  # type: ignore
+            self.crypto_frame.pack_forget()  # type: ignore
+            self.file_analyzer_frame.pack(fill='both', expand=True)  # type: ignore
         except Exception as e:
-            messagebox.showerror("Error", f"Error opening Cryptography module: {str(e)}")
-            
+            messagebox.showerror("Error", f"Error opening File Analyzer module: {str(e)}")
+
     def open_photo_analyzer(self):
-        """Open photo analyzer module"""
         try:
-            # Import and open photo analyzer module
-            from modules.photo_analyzer.main_window import MainWindow
-            photo_window = tk.Toplevel(self.root)
-            MainWindow(photo_window)
-        except ImportError as e:
-            messagebox.showerror("Error", f"Could not load Photo Analyzer module: {str(e)}")
+            self.main_frame.pack_forget()
+            self.file_analyzer_frame.pack_forget()  # type: ignore
+            self.crypto_frame.pack_forget()  # type: ignore
+            self.photo_analyzer_frame.pack(fill='both', expand=True)  # type: ignore
         except Exception as e:
             messagebox.showerror("Error", f"Error opening Photo Analyzer module: {str(e)}")
-            
-    def open_file_analyzer(self):
-        """Open file analyzer module"""
+
+    def open_cryptography(self):
         try:
-            # Import and open file analyzer module
-            from modules.file_analyzer.file_main import FileAnalyzerMainWindow
-            file_window = tk.Toplevel(self.root)
-            FileAnalyzerMainWindow(file_window)
-        except ImportError as e:
-            messagebox.showerror("Error", f"Could not load File Analyzer module: {str(e)}")
+            self.main_frame.pack_forget()
+            self.file_analyzer_frame.pack_forget()  # type: ignore
+            self.photo_analyzer_frame.pack_forget()  # type: ignore
+            self.crypto_frame.pack(fill='both', expand=True)  # type: ignore
         except Exception as e:
-            messagebox.showerror("Error", f"Error opening File Analyzer module: {str(e)}") 
+            messagebox.showerror("Error", f"Error opening Cryptography module: {str(e)}") 

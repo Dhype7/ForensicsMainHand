@@ -7,7 +7,7 @@ import os
 import sys
 import re
 import math
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Callable
 
 from src.ui.theme import Theme
 from src.ui.widgets import ModernButton
@@ -475,11 +475,11 @@ class ClassicalCiphers:
         
         return result
 
-class CryptoMainWindow:
-    """Main window for Cryptography module"""
-    
-    def __init__(self, root: tk.Tk) -> None:
-        self.root = root
+class CryptoMainWindow(tk.Frame):
+    """Main frame for Cryptography module"""
+    def __init__(self, parent, back_callback: Callable[[], None], *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.back_callback = back_callback
         self.theme_var = tk.StringVar(value=Theme.get_current_theme())
         self.ciphers = ClassicalCiphers()
         self.current_cipher = tk.StringVar(value="caesar")
@@ -491,36 +491,14 @@ class CryptoMainWindow:
         self.cipher_desc_label: Optional[tk.Label] = None
         self.theme_combo = None
         self.footer_frame = None
-        self.setup_window()
         self.show_main_choice()
         self.create_footer()
         self.apply_theme()
-        
-    def setup_window(self):
-        """Setup main window properties"""
-        self.root.title(f"Cryptography - {Settings.APP_NAME} v{Settings.APP_VERSION}")
-        self.root.geometry("1200x800")
-        self.root.minsize(1000, 600)
-        
-        # Configure window
-        self.root.configure(bg=Theme.get_color('primary'))
-        
-        # Center window on screen
-        self.center_window()
-        
-    def center_window(self):
-        """Center window on screen"""
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
-        
+
     def clear_content(self):
         if self.content_frame:
             self.content_frame.destroy()
-        self.content_frame = tk.Frame(self.root, bg=Theme.get_color('primary'))
+        self.content_frame = tk.Frame(self, bg=Theme.get_color('primary'))
         self.content_frame.pack(fill='both', expand=True)
         # Always keep footer at the bottom
         if self.footer_frame is not None:
@@ -529,6 +507,9 @@ class CryptoMainWindow:
     def show_main_choice(self):
         self.clear_content()
         self.current_view = 'main_choice'
+        # Back button at the top
+        back_btn = tk.Button(self.content_frame, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.back_callback)
+        back_btn.pack(anchor='nw', padx=20, pady=20)
         label = tk.Label(self.content_frame, text="Choose Cryptography Type", font=Theme.get_font('title'), fg=Theme.get_color('accent'), bg=Theme.get_color('primary'))
         label.pack(pady=60)
         btn_frame = tk.Frame(self.content_frame, bg=Theme.get_color('primary'))
@@ -541,8 +522,6 @@ class CryptoMainWindow:
     def show_classical(self):
         self.clear_content()
         self.current_view = 'classical'
-        back_btn = tk.Button(self.content_frame, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.show_main_choice)
-        back_btn.pack(anchor='nw', padx=20, pady=20)
         self.create_classical_section(self.content_frame)
 
     def show_advanced(self):
@@ -552,6 +531,9 @@ class CryptoMainWindow:
 
     def create_classical_section(self, parent_frame):
         """Create classical ciphers section"""
+        # Back button
+        back_btn = tk.Button(parent_frame, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.show_main_choice)
+        back_btn.pack(anchor='nw', padx=10, pady=10)
         # Title with better styling
         title_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
         title_frame.pack(fill='x', padx=10, pady=(10, 5))
@@ -696,6 +678,9 @@ class CryptoMainWindow:
         
     def create_advanced_section(self, parent_frame):
         """Create advanced cryptography section with direct type selection"""
+        # Back button
+        back_btn = tk.Button(parent_frame, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.show_main_choice)
+        back_btn.pack(anchor='nw', padx=10, pady=10)
         # Title
         title_label = tk.Label(parent_frame, 
                               text="🔓 Advanced Crypto",
@@ -756,8 +741,7 @@ class CryptoMainWindow:
                 padx=20,
                 pady=15,
                 width=18,
-                command=lambda c=cls: c(self.root)
-            )
+                command=lambda c=cls: c(self))
             btn.grid(row=row, column=col, padx=10, pady=10, sticky='nsew')
             btn_frame.grid_columnconfigure(col, weight=1)
         for r in range((len(types) + columns - 1) // columns):
@@ -824,8 +808,8 @@ class CryptoMainWindow:
         """Copy output text to clipboard"""
         output_text = self.output_text_area.get(1.0, tk.END).strip()
         if output_text:
-            self.root.clipboard_clear()
-            self.root.clipboard_append(output_text)
+            self.clipboard_clear()
+            self.clipboard_append(output_text)
             messagebox.showinfo("Copied", "Output text copied to clipboard!")
     
     def swap_text(self):
@@ -845,7 +829,7 @@ class CryptoMainWindow:
             cipher = self.current_cipher.get()
             if self.status_label is not None:
                 self.status_label.config(text=f"Encrypting with {cipher} cipher...")
-            self.root.update()
+            self.update()
             
             # Handle XOR cipher specially
             if cipher == "xor":
@@ -956,7 +940,7 @@ class CryptoMainWindow:
             cipher = self.current_cipher.get()
             if self.status_label is not None:
                 self.status_label.config(text=f"Decrypting with {cipher} cipher...")
-            self.root.update()
+            self.update()
             
             # For XOR, decryption is the same as encryption
             if cipher == "xor":
@@ -1552,7 +1536,7 @@ class CryptoMainWindow:
             self.output_text_area.configure(font=('Courier', self.output_font_size))
 
     def create_footer(self):
-        self.footer_frame = tk.Frame(self.root, bg=Theme.get_color('primary'), height=30)
+        self.footer_frame = tk.Frame(self, bg=Theme.get_color('primary'), height=30)
         self.footer_frame.pack(side='bottom', fill='x')
         self.footer_frame.pack_propagate(False)
         self.status_label = tk.Label(self.footer_frame, 
@@ -1594,7 +1578,7 @@ class CryptoMainWindow:
                 pass
             for child in widget.winfo_children():
                 update_widget_colors(child)
-        update_widget_colors(self.root)
+        update_widget_colors(self)
         # Update footer colors
         if self.status_label is not None:
             self.status_label.configure(bg=Theme.get_color('primary'), fg=Theme.get_color('text_primary'))
@@ -1612,7 +1596,10 @@ class CryptoMainWindow:
 def main():
     """Main function to run the crypto application"""
     root = tk.Tk()
-    app = CryptoMainWindow(root)
+    root.geometry("2000x1600")  # Much larger window
+    root.minsize(1600, 1200)     # Minimum size
+    root.resizable(True, True)  # Allow resizing
+    app = CryptoMainWindow(root, lambda: None)
     root.mainloop()
 
 

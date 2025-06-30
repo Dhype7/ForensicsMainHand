@@ -103,8 +103,9 @@ def rail_fence_decrypt(text, rails):
 # (For brevity, only a few ciphers are shown here. The full implementation will include all ciphers as described.)
 
 class AESCryptoWindow:
-    def __init__(self, parent):
+    def __init__(self, parent, back_callback=None):
         self.parent = parent
+        self.back_callback = back_callback
         self.window = tk.Toplevel(parent)
         self.window.title("AES Encryption/Decryption")
         self.window.geometry("600x500")
@@ -114,6 +115,13 @@ class AESCryptoWindow:
         self.create_widgets()
 
     def create_widgets(self):
+        # Back button
+        def go_back():
+            if self.back_callback:
+                self.back_callback()
+            else:
+                self.window.destroy()
+        tk.Button(self.window, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=go_back).pack(anchor='w', pady=(10, 0), padx=10)
         title = tk.Label(self.window, text="🔑 AES Encryption/Decryption", font=Theme.get_font('title'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('primary'))
         title.pack(pady=10)
         key_frame = tk.Frame(self.window, bg=Theme.get_color('primary'))

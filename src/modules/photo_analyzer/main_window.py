@@ -25,11 +25,11 @@ from .file_utils import FileUtils
 from .settings import Settings
 from .hex_viewer import HexViewerWindow
 
-class MainWindow:
-    """Main application window"""
-    
-    def __init__(self, root: Union[tk.Tk, tk.Toplevel]) -> None:
-        self.root = root
+class MainWindow(tk.Frame):
+    """Main application frame for Photo Analyzer"""
+    def __init__(self, parent, back_callback: Callable[[], None], *args, **kwargs) -> None:
+        super().__init__(parent, *args, **kwargs)
+        self.back_callback = back_callback
         self.selected_file_path: Optional[str] = None
         self.image_label: Optional[tk.Label] = None
         self.result_text: Optional[tk.Text] = None
@@ -46,7 +46,6 @@ class MainWindow:
         self.spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         self.spinner_index = 0
         self.loading_after_id = None
-        
         # Initialize analyzers
         self.exif_analyzer = EXIFAnalyzer()
         self.location_analyzer = LocationAnalyzer()
@@ -59,56 +58,30 @@ class MainWindow:
         self.qr_barcode_analyzer = QRCodeBarcodeAnalyzer()
         self.crypto_analyzer = CryptoAnalyzer()
         self.file_carving_analyzer = FileCarvingAnalyzer()
-        
-        self.setup_window()
         self.create_widgets()
         self.setup_layout()
         self.apply_theme_to_all_widgets()
-        
-    def setup_window(self):
-        """Setup main window properties"""
-        self.root.title(f"{Settings.APP_NAME} v{Settings.APP_VERSION}")
-        self.root.geometry(f"{Settings.WINDOW_WIDTH}x{Settings.WINDOW_HEIGHT}")
-        self.root.minsize(Settings.MIN_WINDOW_WIDTH, Settings.MIN_WINDOW_HEIGHT)
-        
-        # Configure window
-        self.root.configure(bg=Theme.get_color('primary'))
-        
-        # Center window on screen
-        self.center_window()
-        
-    def center_window(self):
-        """Center window on screen"""
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
-        
+
     def create_widgets(self):
-        """Create all GUI widgets"""
         # Main container
-        self.main_frame = tk.Frame(self.root, bg=Theme.get_color('primary'))
+        self.main_frame = tk.Frame(self, bg=Theme.get_color('primary'))
         self.main_frame.pack(fill='both', expand=True, padx=Theme.get_spacing('medium'), 
                            pady=Theme.get_spacing('medium'))
-        
         # Header
         self.create_header()
-        
         # File selection area
         self.create_file_selection()
-        
         # Main content area (tools + results side by side)
         self.create_main_content()
-        
         # Status bar
         self.create_status_bar()
-        
+
     def create_header(self):
-        """Create application header with theme selector"""
         header_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
         header_frame.pack(fill='x', pady=(0, Theme.get_spacing('large')))
+        # Back button
+        back_btn = ModernButton(header_frame, text="← Back", command=self.back_callback, style='secondary')
+        back_btn.pack(side='left', padx=(0, 10))
         # Title
         title_label = tk.Label(header_frame, 
                               text=Settings.APP_NAME,
@@ -129,318 +102,6 @@ class MainWindow:
                                  bg=Theme.get_color('primary'),
                                  fg=Theme.get_color('text_secondary'))
         subtitle_label.pack(anchor='w')
-        
-    def create_file_selection(self):
-        """Create file selection area"""
-        file_frame = tk.Frame(self.main_frame, bg=Theme.get_color('secondary'))
-        file_frame.pack(fill='x', pady=Theme.get_spacing('medium'))
-        
-        # File selector
-        self.file_selector = FileSelector(
-            file_frame,
-            title="Select File for Analysis",
-            file_types=[
-                ("Image Files", "*.jpg *.jpeg *.png *.bmp *.gif *.tiff *.ico *.webp"),
-                ("All Files", "*.*")
-            ]
-        )
-        self.file_selector.pack(fill='x', padx=Theme.get_spacing('medium'), 
-                              pady=Theme.get_spacing('medium'))
-        
-        # Load button
-        self.load_button = ModernButton(
-            file_frame,
-            text="Load File",
-            command=self.load_file,
-            style='primary'
-        )
-        self.load_button.pack(pady=Theme.get_spacing('small'))
-        
-        # Image preview
-        self.image_frame = tk.Frame(file_frame, bg=Theme.get_color('secondary'))
-        self.image_frame.pack(fill='x', pady=Theme.get_spacing('small'))
-        
-        self.image_label = tk.Label(self.image_frame, 
-                                   text="No image loaded",
-                                   bg=Theme.get_color('secondary'),
-                                   fg=Theme.get_color('text_muted'))
-        self.image_label.pack()
-        
-    def create_main_content(self):
-        """Create main content area with tools on left and results on right"""
-        content_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
-        content_frame.pack(fill='both', expand=True, pady=Theme.get_spacing('medium'))
-        
-        # Tools area (left side)
-        self.create_tools_area(content_frame)
-        
-        # Results area (right side)
-        self.create_results_area(content_frame)
-        
-        # Configure grid weights
-        content_frame.columnconfigure(0, weight=1)  # Tools
-        content_frame.columnconfigure(1, weight=2)  # Results (wider)
-        
-    def create_tools_area(self, parent):
-        """Create tools area with analysis buttons"""
-        tools_frame = tk.Frame(parent, bg=Theme.get_color('primary'))
-        tools_frame.grid(row=0, column=0, sticky='nsew', padx=(0, Theme.get_spacing('medium')))
-        
-        # Tools title
-        tools_title = tk.Label(tools_frame,
-                              text="Analysis Tools",
-                              font=Theme.get_font('heading'),
-                              bg=Theme.get_color('primary'),
-                              fg=Theme.get_color('text_primary'))
-        tools_title.pack(anchor='w', pady=(0, Theme.get_spacing('medium')))
-        
-        # Tools grid
-        tools_grid = tk.Frame(tools_frame, bg=Theme.get_color('primary'))
-        tools_grid.pack(fill='x')
-        
-        # Row 1
-        self.exif_button = ToolButton(
-            tools_grid,
-            text="EXIF Analysis",
-            description="Extract device and image metadata",
-            command=self.analyze_exif,
-            icon="📸"
-        )
-        self.exif_button.grid(row=0, column=0, padx=Theme.get_spacing('small'), 
-                             pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.location_button = ToolButton(
-            tools_grid,
-            text="Location Analysis",
-            description="Extract GPS coordinates and address",
-            command=self.analyze_location,
-            icon="📍"
-        )
-        self.location_button.grid(row=0, column=1, padx=Theme.get_spacing('small'), 
-                                 pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.steganography_button = ToolButton(
-            tools_grid,
-            text="Steganography",
-            description="Hide/extract data in images",
-            command=self.open_steganography,
-            icon="🔐"
-        )
-        self.steganography_button.grid(row=0, column=2, padx=Theme.get_spacing('small'), 
-                                      pady=Theme.get_spacing('small'), sticky='ew')
-        
-        # Row 2
-        self.metadata_button = ToolButton(
-            tools_grid,
-            text="Metadata Analysis",
-            description="Detailed metadata with ExifTool",
-            command=self.analyze_metadata,
-            icon="📋"
-        )
-        self.metadata_button.grid(row=1, column=0, padx=Theme.get_spacing('small'), 
-                                 pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.strings_button = ToolButton(
-            tools_grid,
-            text="String Extraction",
-            description="Extract readable strings from files",
-            command=self.analyze_strings,
-            icon="🔍"
-        )
-        self.strings_button.grid(row=1, column=1, padx=Theme.get_spacing('small'), 
-                                pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.binwalk_button = ToolButton(
-            tools_grid,
-            text="Binwalk Analysis",
-            description="Advanced file analysis and extraction",
-            command=self.analyze_binwalk,
-            icon="🔧"
-        )
-        self.binwalk_button.grid(row=1, column=2, padx=Theme.get_spacing('small'), 
-                                pady=Theme.get_spacing('small'), sticky='ew')
-        
-        # Row 3 - New CTF Tools
-        self.zsteg_button = ToolButton(
-            tools_grid,
-            text="Zsteg Analysis",
-            description="PNG/BMP LSB steganography analysis",
-            command=self.analyze_zsteg,
-            icon="🎨"
-        )
-        self.zsteg_button.grid(row=2, column=0, padx=Theme.get_spacing('small'), 
-                              pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.ocr_button = ToolButton(
-            tools_grid,
-            text="OCR Analysis",
-            description="Extract text from images",
-            command=self.analyze_ocr,
-            icon="📝"
-        )
-        self.ocr_button.grid(row=2, column=1, padx=Theme.get_spacing('small'), 
-                            pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.ctf_auto_button = ToolButton(
-            tools_grid,
-            text="CTF Auto-Analyze",
-            description="Run all CTF-relevant analyses",
-            command=self.ctf_auto_analyze,
-            icon="🚀"
-        )
-        self.ctf_auto_button.grid(row=2, column=2, padx=Theme.get_spacing('small'), 
-                                 pady=Theme.get_spacing('small'), sticky='ew')
-        
-        # Row 4 - Advanced Tools
-        self.qr_barcode_button = ToolButton(
-            tools_grid,
-            text="QR/Barcode Scan",
-            description="Detect and decode QR codes/barcodes",
-            command=self.analyze_qr_barcode,
-            icon="📱"
-        )
-        self.qr_barcode_button.grid(row=3, column=0, padx=Theme.get_spacing('small'), 
-                                   pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.hex_viewer_button = ToolButton(
-            tools_grid,
-            text="Hex Viewer",
-            description="View and edit file as hex (find/replace, search, save as copy)",
-            command=self.open_hex_viewer,
-            icon="🧮"
-        )
-        self.hex_viewer_button.grid(row=3, column=1, padx=Theme.get_spacing('small'), 
-                                   pady=Theme.get_spacing('small'), sticky='ew')
-        
-        self.file_carving_button = ToolButton(
-            tools_grid,
-            text="File Carving",
-            description="Extract files from binary data",
-            command=self.analyze_file_carving,
-            icon="🗜️"
-        )
-        self.file_carving_button.grid(row=3, column=2, padx=Theme.get_spacing('small'), 
-                                     pady=Theme.get_spacing('small'), sticky='ew')
-        
-        # Configure grid weights
-        tools_grid.columnconfigure(0, weight=1)
-        tools_grid.columnconfigure(1, weight=1)
-        tools_grid.columnconfigure(2, weight=1)
-        
-    def create_results_area(self, parent):
-        """Create modern results display area with enhanced styling"""
-        self.result_frame = tk.Frame(parent, bg=Theme.get_color('secondary'), 
-                                    bd=3, relief='raised', highlightthickness=1,
-                                    highlightbackground=Theme.get_color('accent'))
-        self.result_frame.grid(row=0, column=1, sticky='nsew')
-        
-        # Results header with title and controls
-        header_frame = tk.Frame(self.result_frame, bg=Theme.get_color('accent'), height=40)
-        header_frame.pack(fill='x', pady=(0, 2))
-        header_frame.pack_propagate(False)
-        
-        # Title
-        title_label = tk.Label(header_frame, text="🔍 Analysis Results", 
-                              font=('Segoe UI', 14, 'bold'),
-                              bg=Theme.get_color('accent'), fg='white')
-        title_label.pack(side='left', padx=10, pady=5)
-        
-        # Control buttons
-        controls_frame = tk.Frame(header_frame, bg=Theme.get_color('accent'))
-        controls_frame.pack(side='right', padx=10, pady=5)
-        
-        # Search frame
-        search_frame = tk.Frame(self.result_frame, bg=Theme.get_color('secondary'))
-        search_frame.pack(fill='x', padx=10, pady=5)
-        
-        search_label = tk.Label(search_frame, text="Search:", 
-                               font=('Segoe UI', 11, 'bold'),
-                               bg=Theme.get_color('secondary'), 
-                               fg=Theme.get_color('text_primary'))
-        search_label.pack(side='left', padx=(0, 5))
-        
-        search_entry = tk.Entry(search_frame, textvariable=self.result_search_var, 
-                               font=('Segoe UI', 11),
-                               bg=Theme.get_color('entry_bg'), 
-                               fg=Theme.get_color('entry_fg'),
-                               relief='solid', bd=1, width=25)
-        search_entry.pack(side='left', padx=(0, 5))
-        
-        search_btn = tk.Button(search_frame, text="🔍 Search", 
-                              command=self.search_in_results,
-                              font=('Segoe UI', 10, 'bold'),
-                              bg=Theme.get_color('accent'), fg='white',
-                              relief='flat', bd=0, padx=15, pady=3,
-                              cursor='hand2')
-        search_btn.pack(side='left', padx=(0, 5))
-        
-        copy_btn = tk.Button(search_frame, text="📋 Copy", 
-                            command=self.copy_results,
-                            font=('Segoe UI', 10, 'bold'),
-                            bg=Theme.get_color('success'), fg='white',
-                            relief='flat', bd=0, padx=15, pady=3,
-                            cursor='hand2')
-        copy_btn.pack(side='left', padx=(0, 5))
-        
-        clear_btn = tk.Button(search_frame, text="🗑️ Clear", 
-                             command=self.clear_results,
-                             font=('Segoe UI', 10, 'bold'),
-                             bg=Theme.get_color('error'), fg='white',
-                             relief='flat', bd=0, padx=15, pady=3,
-                             cursor='hand2')
-        clear_btn.pack(side='left')
-        
-        # Results text area with enhanced styling
-        text_container = tk.Frame(self.result_frame, bg=Theme.get_color('text_bg'), 
-                                 bd=2, relief='sunken')
-        text_container.pack(fill='both', expand=True, padx=10, pady=(0, 10))
-        
-        # Custom text widget with larger font and better colors
-        self.result_text = tk.Text(text_container, 
-                                  wrap='word',
-                                  font=('Consolas', 12),  # Larger, monospace font
-                                  bg=Theme.get_color('text_bg'),
-                                  fg=Theme.get_color('text_fg'),
-                                  relief='flat',
-                                  bd=0,
-                                  padx=10,
-                                  pady=10,
-                                  insertbackground=Theme.get_color('accent'),
-                                  selectbackground=Theme.get_color('accent'),
-                                  selectforeground='white',
-                                  cursor='xterm')
-        self.result_text.pack(side='left', fill='both', expand=True)
-        
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(text_container, orient='vertical', 
-                                 command=self.result_text.yview)
-        scrollbar.pack(side='right', fill='y')
-        self.result_text.configure(yscrollcommand=scrollbar.set)
-        
-        # Configure text tags for syntax highlighting
-        self.result_text.tag_configure('header', 
-                                      font=('Segoe UI', 14, 'bold'),
-                                      foreground=Theme.get_color('accent'))
-        self.result_text.tag_configure('success', 
-                                      foreground=Theme.get_color('success'),
-                                      font=('Consolas', 12, 'bold'))
-        self.result_text.tag_configure('error', 
-                                      foreground=Theme.get_color('error'),
-                                      font=('Consolas', 12, 'bold'))
-        self.result_text.tag_configure('warning', 
-                                      foreground=Theme.get_color('warning'),
-                                      font=('Consolas', 12, 'bold'))
-        self.result_text.tag_configure('info', 
-                                      foreground=Theme.get_color('info'),
-                                      font=('Consolas', 12, 'bold'))
-        self.result_text.tag_configure('highlight', 
-                                      background=Theme.get_color('highlight'),
-                                      font=('Consolas', 12, 'bold'))
-        
-    def create_status_bar(self):
-        """Create status bar"""
-        self.status_bar = StatusBar(self.root)
-        self.status_bar.pack(side='bottom', fill='x')
         
     def setup_layout(self):
         """Setup final layout"""
@@ -470,7 +131,7 @@ class MainWindow:
             # Recursively update children
             for child in widget.winfo_children():
                 update_widget_colors(child)
-        update_widget_colors(self.root)
+        update_widget_colors(self)
         # Special handling for result_frame and accent areas
         if self.result_frame:
             self.result_frame.configure(bg=Theme.get_color('secondary'), highlightbackground=Theme.get_color('accent'))
@@ -527,7 +188,7 @@ class MainWindow:
         Theme.set_theme(self.theme_var.get())
         self.apply_theme_to_all_widgets()
         self.refresh_result_area_theme()
-        self.root.update_idletasks()
+        self.update_idletasks()
 
     def refresh_result_area_theme(self):
         if self.result_frame:
@@ -568,8 +229,8 @@ class MainWindow:
     def copy_results(self):
         if not self.result_text:
             return
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self.result_text.get('1.0', 'end').strip())
+        self.clipboard_clear()
+        self.clipboard_append(self.result_text.get('1.0', 'end').strip())
 
     def clear_results(self):
         if self.result_text:
@@ -630,7 +291,7 @@ class MainWindow:
             return
             
         # Create overlay frame
-        self.loading_overlay = tk.Frame(self.root, bg='black')
+        self.loading_overlay = tk.Frame(self, bg='black')
         
         # Create loading container
         loading_container = tk.Frame(self.loading_overlay, 
@@ -665,7 +326,7 @@ class MainWindow:
         if self.loading_overlay:
             self.loading_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
             self.loading_overlay.lift()
-            self.root.update_idletasks()
+            self.update_idletasks()
             
             # Start spinner animation
             self.animate_spinner()
@@ -675,7 +336,7 @@ class MainWindow:
         if self.loading_overlay:
             self.loading_overlay.place_forget()
             if self.loading_after_id:
-                self.root.after_cancel(self.loading_after_id)
+                self.after_cancel(self.loading_after_id)
                 self.loading_after_id = None
                 
     def animate_spinner(self):
@@ -684,18 +345,18 @@ class MainWindow:
             self.loading_overlay.winfo_viewable()):
             self.spinner_index = (self.spinner_index + 1) % len(self.spinner_chars)
             self.loading_spinner.config(text=self.spinner_chars[self.spinner_index])
-            self.loading_after_id = self.root.after(100, self.animate_spinner)
+            self.loading_after_id = self.after(100, self.animate_spinner)
             
     def run_analysis(self, analysis_func: Callable[..., str], *args: Any):
         """Run analysis in separate thread with loading indicator"""
         def run():
             try:
                 result = analysis_func(*args)
-                self.root.after(0, self.display_results, result)
+                self.after(0, self.display_results, result)
             except Exception as e:
-                self.root.after(0, self.display_error, str(e))
+                self.after(0, self.display_error, str(e))
             finally:
-                self.root.after(0, self.hide_loading)
+                self.after(0, self.hide_loading)
         
         # Show loading before starting analysis
         self.show_loading("Running analysis...")
@@ -789,7 +450,7 @@ class MainWindow:
             return
         
         # Create steganography window
-        stego_window = SteganographyWindow(self.root, self.selected_file_path, 
+        stego_window = SteganographyWindow(self, self.selected_file_path, 
                                          self.steganography_analyzer)
         
     def analyze_metadata(self):
@@ -1239,7 +900,7 @@ After installation, restart the application and try again."""
             return
         
         # Open crypto popup window
-        CryptoPopupWindow(self.root, self.selected_file_path, self.crypto_analyzer)
+        CryptoPopupWindow(self, self.selected_file_path, self.crypto_analyzer)
         
     def analyze_file_carving(self):
         """Analyze file carving"""
@@ -1359,8 +1020,70 @@ After installation, restart the application and try again."""
         if not self.selected_file_path:
             messagebox.showwarning("Warning", "Please load a file first")
             return
-        hex_window = tk.Toplevel(self.root)
+        hex_window = tk.Toplevel(self)
         HexViewerWindow(hex_window, self.selected_file_path)
+
+    def create_file_selection(self):
+        """Create file selection area"""
+        self.file_selector = FileSelector(self.main_frame, title="Select File", file_types=[
+            ("All Files", "*.*"),
+            ("Image Files", "*.jpg *.jpeg *.png *.bmp *.gif *.tiff *.ico *.webp")
+        ])
+        self.file_selector.pack(fill='x', pady=(0, Theme.get_spacing('medium')))
+        # Image/file preview label
+        self.image_label = tk.Label(self.main_frame, text="No file selected", font=Theme.get_font('default'), bg=Theme.get_color('primary'), fg=Theme.get_color('text_secondary'))
+        self.image_label.pack(fill='x', pady=(0, Theme.get_spacing('medium')))
+
+    def create_main_content(self):
+        """Create main content area (tools + results side by side)"""
+        content_frame = tk.Frame(self.main_frame, bg=Theme.get_color('secondary'))
+        content_frame.pack(fill='both', expand=True, pady=(0, Theme.get_spacing('medium')))
+        content_frame.columnconfigure(1, weight=1)
+        content_frame.rowconfigure(0, weight=1)
+
+        # Left: Tool buttons
+        tools_frame = tk.Frame(content_frame, bg=Theme.get_color('primary'))
+        tools_frame.grid(row=0, column=0, sticky='ns', padx=(0, Theme.get_spacing('large')))
+
+        ToolButton(tools_frame, text="EXIF", description="Analyze EXIF data", command=self.analyze_exif, icon="📸").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Location", description="Analyze GPS/location", command=self.analyze_location, icon="📍").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Steganography", description="Detect/Hide data in images", command=self.open_steganography, icon="🕵️").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Metadata", description="Analyze file metadata", command=self.analyze_metadata, icon="📝").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Strings", description="Extract strings from file", command=self.analyze_strings, icon="🔤").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Binwalk", description="Scan for embedded files", command=self.analyze_binwalk, icon="🛠️").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Zsteg", description="Detect stego in PNG/BMP", command=self.analyze_zsteg, icon="🎨").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="OCR", description="Extract text from image", command=self.analyze_ocr, icon="🔎").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="QR/Barcode", description="Scan for QR/barcodes", command=self.analyze_qr_barcode, icon="📱").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Crypto", description="Analyze encoded data", command=self.analyze_crypto, icon="🔓").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="File Carving", description="Extract embedded files", command=self.analyze_file_carving, icon="🗜️").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="CTF Auto", description="Run all CTF analyses", command=self.ctf_auto_analyze, icon="🚀").pack(fill='x', pady=2)
+        ToolButton(tools_frame, text="Hex Viewer", description="View file in hex", command=self.open_hex_viewer, icon="🔢").pack(fill='x', pady=2)
+
+        # Right: Results area
+        self.result_frame = tk.Frame(content_frame, bg=Theme.get_color('secondary'), highlightbackground=Theme.get_color('accent'), highlightthickness=1)
+        self.result_frame.grid(row=0, column=1, sticky='nsew')
+        self.result_frame.columnconfigure(0, weight=1)
+        self.result_frame.rowconfigure(1, weight=1)
+
+        # Search bar and buttons
+        search_frame = tk.Frame(self.result_frame, bg=Theme.get_color('secondary'))
+        search_frame.grid(row=0, column=0, sticky='ew', padx=Theme.get_spacing('medium'), pady=(Theme.get_spacing('medium'), 0))
+        search_frame.columnconfigure(1, weight=1)
+        tk.Label(search_frame, text="Search Results:", bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'), font=Theme.get_font('default')).pack(side='left')
+        search_entry = tk.Entry(search_frame, textvariable=self.result_search_var, bg=Theme.get_color('entry_bg'), fg=Theme.get_color('entry_fg'), insertbackground=Theme.get_color('accent'))
+        search_entry.pack(side='left', fill='x', expand=True, padx=(8, 0))
+        tk.Button(search_frame, text="Search", command=self.search_in_results).pack(side='left', padx=4)
+        tk.Button(search_frame, text="Copy", command=self.copy_results).pack(side='left', padx=4)
+        tk.Button(search_frame, text="Clear", command=self.clear_results).pack(side='left', padx=4)
+
+        # Results text area
+        self.result_text = ModernText(self.result_frame, wrap='word')
+        self.result_text.grid(row=1, column=0, sticky='nsew', padx=Theme.get_spacing('medium'), pady=(0, Theme.get_spacing('medium')))
+
+    def create_status_bar(self):
+        """Create status bar at the bottom"""
+        self.status_bar = StatusBar(self.main_frame)
+        self.status_bar.pack(fill='x', side='bottom')
 
 class SteganographyWindow:
     """Steganography analysis window"""

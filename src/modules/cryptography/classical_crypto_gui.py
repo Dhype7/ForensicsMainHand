@@ -18,8 +18,9 @@ from src.modules.cryptography.classical_ciphers import BinaryCipher, XORCipher
 class ClassicalCryptoGUI:
     """GUI for classical cryptography ciphers"""
     
-    def __init__(self, parent_frame: tk.Frame):
+    def __init__(self, parent_frame: tk.Frame, back_callback=None):
         self.parent_frame = parent_frame
+        self.back_callback = back_callback
         self.ciphers = ClassicalCiphers()
         self.current_cipher = tk.StringVar(value="caesar")
         self.input_text = ""
@@ -33,6 +34,14 @@ class ClassicalCryptoGUI:
         # Main container
         main_frame = tk.Frame(self.parent_frame, bg=Theme.get_color('primary'))
         main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Back button
+        def go_back():
+            if self.back_callback:
+                self.back_callback()
+            else:
+                self.parent_frame.destroy()
+        ModernButton(main_frame, text="← Back", command=go_back, style='secondary').pack(anchor='w', pady=(0, 10))
         
         # Title
         title_label = tk.Label(main_frame, 
