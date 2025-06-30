@@ -209,3 +209,18 @@ for pkg in "${!critical_modules[@]}"; do
 done
 
 print_success "Installation completed successfully!"
+
+echo "[+] Installing Python dependencies..."
+pip install -r requirements.txt
+
+echo "[+] Checking/installing system dependencies..."
+if ! command -v unrar &> /dev/null; then
+    echo "[!] 'unrar' not found. Installing (Debian/Ubuntu)..."
+    sudo apt-get update && sudo apt-get install -y unrar
+fi
+if ! command -v 7z &> /dev/null; then
+    echo "[!] 'p7zip-full' not found. Installing (Debian/Ubuntu)..."
+    sudo apt-get update && sudo apt-get install -y p7zip-full
+fi
+
+echo "[+] All dependencies installed."

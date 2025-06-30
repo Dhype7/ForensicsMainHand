@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import sys
-from typing import Optional
+from typing import Optional, Union
 
 # Add the modules directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
@@ -277,9 +277,9 @@ class ForensicsToolkitWindow:
         """Open file analyzer module"""
         try:
             # Import and open file analyzer module
-            from modules.file_analyzer.file_main import FileMainWindow
+            from modules.file_analyzer.file_main import FileAnalyzerMainWindow
             file_window = tk.Toplevel(self.root)
-            FileMainWindow(file_window)
+            FileAnalyzerMainWindow(file_window)
         except ImportError as e:
             messagebox.showerror("Error", f"Could not load File Analyzer module: {str(e)}")
         except Exception as e:

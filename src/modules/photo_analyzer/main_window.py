@@ -6,7 +6,7 @@ from tkinter import ttk, messagebox, filedialog, simpledialog
 from PIL import Image, ImageTk
 import os
 import threading
-from typing import Optional, Callable, Any, Dict
+from typing import Optional, Callable, Any, Dict, Union
 
 from .theme import Theme
 from .widgets import ModernButton, ModernEntry, ModernText, FileSelector, StatusBar, ToolButton
@@ -28,7 +28,7 @@ from .hex_viewer import HexViewerWindow
 class MainWindow:
     """Main application window"""
     
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: Union[tk.Tk, tk.Toplevel]) -> None:
         self.root = root
         self.selected_file_path: Optional[str] = None
         self.image_label: Optional[tk.Label] = None

@@ -13,4 +13,9 @@ pyzbar>=0.1.9
 qrcode>=7.4.0
 stegano>=0.9.9
 exifread
-requests>=2.31.0 
+requests>=2.31.0
+python-magic
+rarfile
+py7zr
+zstandard
+lz4 
