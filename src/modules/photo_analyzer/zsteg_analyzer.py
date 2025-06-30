@@ -112,7 +112,6 @@ class ZstegAnalyzer:
                 'zsteg',
                 '-a',  # All channels
                 '-v',  # Verbose
-                '-x',  # Extract data
                 file_path
             ]
             

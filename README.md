@@ -14,8 +14,9 @@ git clone https://github.com/Dhype7/ForensicsMainHand.git
 cd ForensicsMainHand
 ```
 
-### 2. Install (One Command)
+### 2. Install
 ```bash
+sudo chmod +x install.sh run.sh
 sudo ./install.sh
 ```
 This automatically installs all dependencies and sets up the environment.

@@ -1,0 +1,23 @@
+Foremost version 1.5.7 by Jesse Kornblum, Kris Kendall, and Nick Mikus
+Audit File
+
+Foremost started at Mon Jun 30 09:55:54 2025
+Invocation: foremost -i /home/kali/Downloads/NYXinferno.jpg -o foremost_output_NYXinferno.jpg 
+Output directory: /home/kali/Cursor/DemoAnalyzer/foremost_output_NYXinferno.jpg
+Configuration file: /etc/foremost.conf
+------------------------------------------------------------------
+File: /home/kali/Downloads/NYXinferno.jpg
+Start: Mon Jun 30 09:55:54 2025
+Length: 375 KB (384659 bytes)
+ 
+Num	 Name (bs=512)	       Size	 File Offset	 Comment 
+
+0:	00000000.jpg 	     375 KB 	          0 	 
+Finish: Mon Jun 30 09:55:54 2025
+
+1 FILES EXTRACTED
+	
+jpg:= 1
+------------------------------------------------------------------
+
+Foremost finished at Mon Jun 30 09:55:54 2025

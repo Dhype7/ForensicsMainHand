@@ -30,43 +30,168 @@ class LocationAnalyzer:
         """
         try:
             with Image.open(image_path) as image:
-                exif_data = image._getexif()  # type: ignore
+                # Try multiple methods to get EXIF data
+                exif_data = None
+                
+                # Method 1: Try getexif()
+                try:
+                    exif_data = image.getexif()
+                except Exception:
+                    pass
+                
+                # Method 2: Try _getexif() (older method)
+                if not exif_data:
+                    try:
+                        exif_data = image._getexif()  # type: ignore
+                    except Exception:
+                        pass
+                
+                # Method 3: Try accessing info attribute
+                if not exif_data and hasattr(image, 'info'):
+                    try:
+                        exif_data = image.info
+                    except Exception:
+                        pass
                 
                 if not exif_data:
-                    logger.warning(f"No EXIF data found in {image_path}")
                     return {}
                 
-                # Find GPS info
-                for tag_id, value in exif_data.items():
-                    decoded_tag = ExifTags.TAGS.get(tag_id, tag_id)
-                    if decoded_tag == "GPSInfo":
-                        temp_gps = {ExifTags.GPSTAGS.get(t, t): v for t, v in value.items()}
-                        self.gps_data = {k: v for k, v in temp_gps.items() if isinstance(k, str)}
-                        break
+                # First, try manual extraction since we know the format
+                manual_result = self.extract_gps_data_manual(image_path)
+                if manual_result:
+                    return manual_result
                 
-                return self.gps_data
+                # Try simple extraction based on the known format
+                simple_result = self.extract_gps_data_simple(image_path)
+                if simple_result:
+                    return simple_result
+                
+                # If manual extraction failed, try standard methods
+                
+                # Search for GPS data in all EXIF tags
+                gps_data = {}
+                for tag_id, value in exif_data.items():
+                    decoded_tag = ExifTags.TAGS.get(tag_id, tag_id)  # type: ignore
+                    
+                    # Check if this is a GPS-related tag
+                    if decoded_tag == "GPSInfo" or tag_id == 34853:
+                        # If GPSInfo is a dictionary, process it
+                        if isinstance(value, dict):
+                            for gps_tag_id, gps_value in value.items():
+                                gps_tag_name = ExifTags.GPSTAGS.get(gps_tag_id, f"GPS_{gps_tag_id}")
+                                gps_data[gps_tag_name] = gps_value
+                        else:
+                            # GPSInfo is not a dictionary, skip
+                            pass
+                    
+                    # Also check for individual GPS tags that might be stored directly
+                    elif decoded_tag.startswith("GPS") or str(tag_id).startswith("348"):
+                        gps_data[decoded_tag] = value
+                
+                # If we found GPS data, store it
+                if gps_data:
+                    self.gps_data = gps_data
+                    return self.gps_data
+                else:
+                    # Try advanced extraction as final fallback
+                    return self.extract_gps_data_advanced(image_path)
                 
         except Exception as e:
             logger.error(f"Error extracting GPS data from {image_path}: {e}")
             return {}
     
+    def extract_gps_data_manual(self, image_path: str) -> Dict[str, Any]:
+        """
+        Manual GPS extraction as fallback when standard methods fail
+        """
+        try:
+            with Image.open(image_path) as image:
+                # Try to get raw EXIF data
+                exif_data = image.getexif()
+                
+                # Look for the specific format you showed: {1: 'N', 2: (33.0, 13.0, 14.48544), 3: 'E', 4: (44.0, 21.0, 3.78288), 5: 0, 6: 32.0}
+                for tag_id, value in exif_data.items():
+                    if isinstance(value, dict):
+                        # Check if this looks like GPS data
+                        if 1 in value and 2 in value and 3 in value and 4 in value:
+                            gps_data = {}
+                            
+                            # Map the numeric keys to GPS field names
+                            gps_mapping = {
+                                1: 'GPSLatitudeRef',
+                                2: 'GPSLatitude', 
+                                3: 'GPSLongitudeRef',
+                                4: 'GPSLongitude',
+                                5: 'GPSAltitudeRef',
+                                6: 'GPSAltitude'
+                            }
+                            
+                            for key, gps_value in value.items():
+                                if key in gps_mapping:
+                                    gps_data[gps_mapping[key]] = gps_value
+                            
+                            if gps_data:
+                                self.gps_data = gps_data
+                                return gps_data
+                
+                return {}
+                
+        except Exception as e:
+            logger.error(f"Error in manual GPS extraction: {e}")
+            return {}
+    
+    def debug_exif_data(self, image_path: str) -> str:
+        """
+        Debug method to show all EXIF data from an image
+        """
+        try:
+            with Image.open(image_path) as image:
+                exif_data = image.getexif()
+                
+                output = "=== EXIF Data Debug ===\n\n"
+                output += f"Total EXIF tags: {len(exif_data)}\n\n"
+                
+                for tag_id, value in exif_data.items():
+                    decoded_tag = ExifTags.TAGS.get(tag_id, f"Unknown_{tag_id}")  # type: ignore
+                    output += f"Tag {tag_id} ({decoded_tag}): {value} (type: {type(value)})\n"
+                    
+                    # If it's a dictionary, show its contents
+                    if isinstance(value, dict):
+                        output += f"  Dictionary contents:\n"
+                        for k, v in value.items():
+                            output += f"    {k}: {v} (type: {type(v)})\n"
+                        output += "\n"
+                
+                return output
+                
+        except Exception as e:
+            return f"Error reading EXIF data: {e}"
+    
     def convert_to_degrees(self, value: Any) -> Optional[float]:
         """
         Convert GPS coordinate values to decimal degrees.
-        Handles EXIF rational tuples.
+        Handles EXIF rational tuples and various formats.
         """
         try:
             if isinstance(value, tuple) and len(value) == 3:
-                def rational_to_float(r):
+                # Handle degrees, minutes, seconds format
+                def rational_to_float(r: Any) -> float:
                     if isinstance(r, tuple) and len(r) == 2:
                         return float(r[0]) / float(r[1]) if r[1] != 0 else 0.0  # type: ignore
                     return float(r)  # type: ignore
+                
                 d = rational_to_float(value[0])
                 m = rational_to_float(value[1])
                 s = rational_to_float(value[2])
-                return d + (m / 60.0) + (s / 3600.0)
+                
+                result = d + (m / 60.0) + (s / 3600.0)
+                return result
+            elif isinstance(value, (int, float)):
+                # Already in decimal degrees
+                return float(value)
             else:
-                return float(value)  # type: ignore
+                return None
+                
         except Exception as e:
             logger.error(f"Error converting GPS value to degrees: {e}")
             return None
@@ -140,10 +265,8 @@ class LocationAnalyzer:
             Dictionary containing location information or None if failed
         """
         try:
-            location = self.geolocator.reverse(coordinates, exactly_one=True, timeout=object.__new__(float))
-            # If geopy is async, run the coroutine
-            if asyncio.iscoroutine(location):
-                location = asyncio.run(location)
+            location = self.geolocator.reverse(coordinates, exactly_one=True)
+            
             if location:
                 self.location_info = {
                     'address': location.address,  # type: ignore
@@ -271,4 +394,112 @@ class LocationAnalyzer:
             text_lines.append(f"  {analysis_result['google_maps_link']}")
             text_lines.append("")
         
-        return "\n".join(text_lines) 
+        return "\n".join(text_lines)
+    
+    def extract_gps_data_advanced(self, image_path: str) -> Dict[str, Any]:
+        """
+        Advanced GPS extraction using different EXIF access methods
+        """
+        try:
+            with Image.open(image_path) as image:
+                # Try to access GPS data through different methods
+                
+                # Method 1: Try to get all EXIF data including sub-IFDs
+                try:
+                    # Get the full EXIF data
+                    exif_data = image.getexif()
+                    
+                    # Look for GPS sub-IFD
+                    if 34853 in exif_data:  # GPSInfo tag
+                        gps_offset = exif_data[34853]
+                        
+                        # Try to access the GPS data at this offset
+                        # This might require a different approach
+                        
+                except Exception:
+                    pass
+                
+                # Method 2: Try using PIL's _getexif() method
+                try:
+                    raw_exif = image._getexif()  # type: ignore
+                    
+                    if raw_exif and 34853 in raw_exif:
+                        gps_data_raw = raw_exif[34853]
+                        
+                        # If it's a dictionary, process it
+                        if isinstance(gps_data_raw, dict):
+                            gps_data = {}
+                            for tag_id, value in gps_data_raw.items():
+                                tag_name = ExifTags.GPSTAGS.get(tag_id, f"GPS_{tag_id}")
+                                gps_data[tag_name] = value
+                            
+                            if gps_data:
+                                self.gps_data = gps_data
+                                return gps_data
+                        
+                except Exception:
+                    pass
+                
+                # Method 3: Try to read the file directly and parse EXIF
+                try:
+                    import struct
+                    with open(image_path, 'rb') as f:
+                        # Read the file header to find EXIF
+                        data = f.read(1024)  # Read first 1KB
+                        
+                        # Look for EXIF marker
+                        exif_pos = data.find(b'Exif')
+                        if exif_pos != -1:
+                            # This is a simplified approach - in practice, you'd need a full EXIF parser
+                            pass
+                            
+                except Exception:
+                    pass
+                
+                return {}
+                
+        except Exception as e:
+            logger.error(f"Error in advanced GPS extraction: {e}")
+            return {}
+    
+    def extract_gps_data_simple(self, image_path: str) -> Dict[str, Any]:
+        """
+        Simple GPS extraction based on the specific format you showed
+        """
+        try:
+            with Image.open(image_path) as image:
+                # Get all EXIF data
+                exif_data = image.getexif()
+                
+                # Look for any dictionary that contains the GPS pattern you showed
+                # {1: 'N', 2: (33.0, 13.0, 14.48544), 3: 'E', 4: (44.0, 21.0, 3.78288), 5: 0, 6: 32.0}
+                
+                for tag_id, value in exif_data.items():
+                    if isinstance(value, dict):
+                        
+                        # Check if this dictionary has the GPS pattern
+                        if (1 in value and 2 in value and 3 in value and 4 in value and
+                            isinstance(value[1], str) and isinstance(value[3], str) and
+                            isinstance(value[2], tuple) and isinstance(value[4], tuple)):
+                            
+                            # Extract the GPS data
+                            gps_data = {
+                                'GPSLatitudeRef': value[1],      # 'N'
+                                'GPSLatitude': value[2],         # (33.0, 13.0, 14.48544)
+                                'GPSLongitudeRef': value[3],     # 'E'
+                                'GPSLongitude': value[4],        # (44.0, 21.0, 3.78288)
+                            }
+                            
+                            # Add altitude if present
+                            if 5 in value and 6 in value:
+                                gps_data['GPSAltitudeRef'] = value[5]  # 0
+                                gps_data['GPSAltitude'] = value[6]     # 32.0
+                            
+                            self.gps_data = gps_data
+                            return gps_data
+                
+                return {}
+                
+        except Exception as e:
+            logger.error(f"Error in simple GPS extraction: {e}")
+            return {} 
