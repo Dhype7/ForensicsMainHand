@@ -1431,28 +1431,31 @@ class CryptoMainWindow(tk.Frame):
 
     def create_advanced_section(self, parent_frame):
         """Full-featured, user-friendly Advanced Crypto GUI with advanced attacks and Magic Hasher."""
+        # Back button
+        back_btn = tk.Button(parent_frame, text=" Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.show_main_choice)
+        back_btn.pack(anchor='nw', padx=10, pady=10)
         # Title
         title_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
         title_frame.pack(fill='x', padx=10, pady=(10, 5))
-        title_label = tk.Label(title_frame, text="🔓 Advanced Crypto", font=Theme.get_font('title'), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        title_label = tk.Label(title_frame, text=" Advanced Crypto", font=Theme.get_font('title'), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
         title_label.pack(side='left')
         # Cipher selection grid
         cipher_info = [
-            ("rsa", "RSA", "🔑", "Asymmetric encryption (public/private key)."),
-            ("aes", "AES", "🟦", "Symmetric block cipher (128/192/256-bit)."),
-            ("blowfish", "Blowfish", "🐡", "Symmetric block cipher (variable key size)."),
-            ("des", "DES", "🔲", "Symmetric block cipher (56-bit key)."),
-            ("rc4", "RC4", "💧", "Stream cipher (variable key size)."),
-            ("rail_fence", "Rail Fence (Adv)", "🚆", "Zigzag cipher with brute force attack."),
-            ("substitution", "Substitution (Adv)", "🔀", "Substitution with frequency analysis."),
-            ("caesar", "Caesar (Adv)", "🔤", "Caesar with brute force/frequency analysis."),
-            ("otp", "OTP", "🗝️", "One-Time Pad (perfect secrecy)."),
-            ("base", "Base64/32/16", "🔢", "Base encoding/decoding."),
-            ("sha256", "SHA-256", "🔒", "Secure hash algorithm (256-bit)."),
-            ("md5", "MD5", "🧩", "Hash function (128-bit, not secure)."),
-            ("hmac", "HMAC", "🔏", "Keyed-hash message authentication code."),
-            ("magic_hasher", "Magic Hasher", "✨", "Identify and crack hashes with Hashcat."),
-            ("dots", "Dots", "⚫", "Convert spaces to 0 and other chars to 1 (Dots cipher)."),
+            ("rsa", "RSA", "", "Asymmetric encryption (public/private key)."),
+            ("aes", "AES", "", "Symmetric block cipher (128/192/256-bit)."),
+            ("blowfish", "Blowfish", "", "Symmetric block cipher (variable key size)."),
+            ("des", "DES", "", "Symmetric block cipher (56-bit key)."),
+            ("rc4", "RC4", "", "Stream cipher (variable key size)."),
+            ("rail_fence", "Rail Fence (Adv)", "", "Zigzag cipher with brute force attack."),
+            ("substitution", "Substitution (Adv)", "", "Substitution with frequency analysis."),
+            ("caesar", "Caesar (Adv)", "", "Caesar with brute force/frequency analysis."),
+            ("otp", "OTP", "", "One-Time Pad (perfect secrecy)."),
+            ("base", "Base64/32/16", "", "Base encoding/decoding."),
+            ("sha256", "SHA-256", "", "Secure hash algorithm (256-bit)."),
+            ("md5", "MD5", "", "Hash function (128-bit, not secure)."),
+            ("hmac", "HMAC", "", "Keyed-hash message authentication code."),
+            ("magic_hasher", "Magic Hasher", "", "Identify and crack hashes with Hashcat."),
+            ("dots", "Dots", "", "Convert spaces to 0 and other chars to 1 (Dots cipher)."),
             ("morse", "Morse Code", "•-", "Encode/decode Morse code from text or audio."),
         ]
         self.adv_cipher_buttons = {}
