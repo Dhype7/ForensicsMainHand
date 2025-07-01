@@ -25,6 +25,7 @@ class ClassicalCryptoGUI:
         self.current_cipher = tk.StringVar(value="caesar")
         self.input_text = ""
         self.output_text = ""
+        self.output_font_size = 10  # Track font size for zoom functionality
         
         self.create_widgets()
         
@@ -121,6 +122,10 @@ class ClassicalCryptoGUI:
                     command=self.save_file, style='secondary').pack(side='left', padx=(0, 10))
         ModernButton(output_buttons_frame, text="Clear", 
                     command=self.clear_output, style='secondary').pack(side='left', padx=(0, 10))
+        ModernButton(output_buttons_frame, text="🔍 Zoom In", 
+                    command=self.zoom_in, style='secondary').pack(side='left', padx=(0, 10))
+        ModernButton(output_buttons_frame, text="🔍 Zoom Out", 
+                    command=self.zoom_out, style='secondary').pack(side='left')
         
         # Output text area
         self.output_text_area = scrolledtext.ScrolledText(output_frame, 
@@ -146,16 +151,11 @@ class ClassicalCryptoGUI:
         # Clear existing parameters
         for widget in self.params_frame.winfo_children():
             widget.destroy()
-        # Hide XOR input frame if present
+        # Clear input area for XOR
         if hasattr(self, 'xor_input_frame'):
             self.xor_input_frame.destroy()
-            del self.xor_input_frame
-        # Show main input area by default
-        self.input_text_area.pack(fill='both', expand=True)
         cipher = self.current_cipher.get().lower()
         if cipher == "xor":
-            # Hide main input area, show XOR dual input
-            self.input_text_area.pack_forget()
             self.create_xor_dual_input()
             return
         elif cipher == "caesar":
@@ -523,3 +523,14 @@ class ClassicalCryptoGUI:
             messagebox.showerror("Error", f"Invalid parameter: {str(e)}")
         except Exception as e:
             messagebox.showerror("Error", f"Decryption failed: {str(e)}")
+    
+    def zoom_in(self):
+        """Increase output text font size by 1"""
+        self.output_font_size += 1
+        self.output_text_area.configure(font=('Courier', self.output_font_size))
+    
+    def zoom_out(self):
+        """Decrease output text font size by 1"""
+        if self.output_font_size > 6:  # Minimum font size of 6
+            self.output_font_size -= 1
+            self.output_text_area.configure(font=('Courier', self.output_font_size)) 

@@ -98,7 +98,50 @@ python main.py
 ```bash
 python3 main.py
 ```
+To launch the web analyzer, run:
+```bash
+python main.py --web
+```
+
 *Note: This requires all dependencies to be installed system-wide.*
+
+### 🌐 Web Analyzer (Flask Web App)
+
+#### Prerequisites
+- **Operating System**: Linux (Kali recommended), Ubuntu, Debian, or Windows with Python 3.8+
+- **Python**: 3.8 or higher
+- **pip**: Python package manager
+
+#### Python Dependencies
+The web analyzer requires the following Python packages (see `src/modules/web_analyzer_project/requirements.txt`):
+
+```bash
+flask
+requests
+python-whois
+beautifulsoup4
+dnspython
+```
+
+You can install them manually with:
+```bash
+pip install flask requests python-whois beautifulsoup4 dnspython
+```
+
+#### How to Run
+
+To launch the web analyzer, run:
+```bash
+python main.py --web
+```
+
+- This will start a local web server (default: http://127.0.0.1:5000/)
+- Open your browser and navigate to the address to use the web interface
+
+#### Usage Notes
+- The web analyzer is for educational and CTF use. Do not use brute force or scanning features on unauthorized targets.
+- Some features (like brute force) are hardcoded for demo.testfire.net and may need adjustment for other sites.
+- For best results, ensure all dependencies are installed and your firewall allows local connections.
 
 ---
 
@@ -130,6 +173,15 @@ python3 main.py
 - **String Analysis**: Extract readable strings with encoding detection
 - **Binary Analysis**: Inspect file structure and headers
 - **Format Detection**: Identify file types and signatures
+
+### 🌐 Web Analyzer (Flask Web App)
+- **HTTP Header Analysis**: View all HTTP headers for a given URL.
+- **IP/Domain Resolver**: Resolve domains to IP addresses.
+- **XSS Scanner**: Basic detection of reflected XSS vulnerabilities.
+- **Port Scanner**: Scan common ports on a target domain.
+- **Security Headers Check**: Check for missing or weak HTTP security headers.
+- **Login Page Discovery**: Find login forms/pages on a target website.
+- **Brute Force Login**: Attempt login brute force (for demo.testfire.net or similar forms).
 
 ### 🎨 Modern GUI
 - **Dark/Light Theme**: Professional themes with easy switching
@@ -168,6 +220,9 @@ python3 main.py
 2. Use "String Analysis" to extract readable text
 3. Use "Binwalk" to find embedded files
 4. Use "Hex Viewer" for byte-level analysis
+
+#### Web Analysis
+1. Use "Web Analyzer" to perform web analysis
 
 ---
 
@@ -210,22 +265,73 @@ Extend the toolkit by adding new modules in the `src/modules/` directory.
 ```
 ForensicsMainHand/
 ├── main.py                      # Main application entry point
-├── run.sh                       # Launcher script (NEW!)
+├── run.sh                       # Launcher script
 ├── install.sh                   # Installation script
 ├── requirements.txt             # Python dependencies
 ├── README.md                    # This file
 ├── LICENSE                      # License information
+├── webanalyzer.py               # Flask web analyzer app
+├── static/
+│   └── img/
+│       └── nyx_logo.png
 └── src/
-    ├── config/                  # Configuration files
-    ├── core/                    # Core analysis modules
-    ├── modules/                 # Feature modules
-    │   ├── cryptography/        # Cryptography tools
-    │   ├── file_analyzer/       # File analysis
-    │   └── photo_analyzer/      # Image analysis
-    ├── ui/                      # User interface
-    └── utils/                   # Utility functions
+    ├── config/
+    │   ├── __init__.py
+    │   └── settings.py
+    ├── core/
+    │   ├── exif_analyzer.py
+    │   ├── location_analyzer.py
+    │   ├── string_analyzer.py
+    │   └── zsteg_analyzer.py
+    ├── modules/
+    │   ├── cryptography/
+    │   │   ├── __init__.py
+    │   │   ├── advanced_crypto.py
+    │   │   ├── classical_ciphers.py
+    │   │   ├── classical_crypto_gui.py
+    │   │   └── crypto_main.py
+    │   ├── file_analyzer/
+    │   │   ├── __init__.py
+    │   │   ├── file_main.py
+    │   │   └── file_utils.py
+    │   ├── photo_analyzer/
+    │   │   ├── __init__.py
+    │   │   ├── binwalk_analyzer.py
+    │   │   ├── crypto_analyzer.py
+    │   │   ├── exif_analyzer.py
+    │   │   ├── file_carving_analyzer.py
+    │   │   ├── file_utils.py
+    │   │   ├── hex_viewer.py
+    │   │   ├── location_analyzer.py
+    │   │   ├── main_window.py
+    │   │   ├── metadata_analyzer.py
+    │   │   ├── ocr_analyzer.py
+    │   │   ├── qr_barcode_analyzer.py
+    │   │   ├── settings.py
+    │   │   ├── steganography.py
+    │   │   ├── string_analyzer.py
+    │   │   ├── theme.py
+    │   │   ├── validation.py
+    │   │   ├── widgets.py
+    │   │   └── zsteg_analyzer.py
+    │   └── web_analyzer_project/
+    │       ├── requirements.txt
+    │       ├── templates/
+    │       │   ├── index.html
+    │       │   └── result.html
+    │       └── web_tools/
+    │           └── tools.py
+    ├── forensics_main.py
+    ├── forensics_toolkit.py
+    ├── ui/
+    │   ├── __init__.py
+    │   ├── theme.py
+    │   └── widgets.py
+    └── utils/
+        ├── __init__.py
+        ├── file_utils.py
+        └── validation.py
 ```
-
 ---
 
 ## 🎯 Use Cases
@@ -241,12 +347,14 @@ ForensicsMainHand/
 - Crack classical and modern ciphers
 - Identify and crack hash types
 - Analyze binary files for hidden data
+- **Web CTFs**: Scan for XSS, enumerate login pages, brute force demo logins, check HTTP headers, and perform basic web reconnaissance
 
 ### Security Research
 - Analyze suspicious images and files
 - Extract embedded data and metadata
 - Perform cryptographic analysis
 - Reverse engineer file formats
+- **Web Security**: Check for missing security headers, scan open ports, resolve domains, and test for basic XSS vulnerabilities
 
 ---
 
