@@ -20,3 +20,7 @@ py7zr
 zstandard
 lz4
 pyperclip>=1.9.0 
+flask
+python-whois
+beautifulsoup4 
+dnspython

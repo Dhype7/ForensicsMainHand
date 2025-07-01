@@ -100,6 +100,20 @@ python3 main.py
 ```
 *Note: This requires all dependencies to be installed system-wide.*
 
+### Method 5: Launch the Web Analyzer (Web UI)
+You can launch the Web Analyzer in two ways:
+
+**From the command line:**
+```bash
+python main.py --web
+```
+This will start a local web server. Open your browser and go to [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+**From the GUI:**
+- Open the main application as usual (`./run.sh` or desktop shortcut)
+- Click the "Launch Web Analyzer" button on the main menu
+- A message will appear with the URL to open in your browser
+
 ---
 
 ## 🌟 Features
@@ -138,6 +152,16 @@ python3 main.py
 - **File Browser**: Easy file selection with drag-and-drop support
 - **Accessibility**: Clear fonts, good contrast, keyboard navigation
 
+### 🌐 Web Analyzer (NEW)
+- **HTTP Headers Analysis**: Inspect HTTP response headers for any domain
+- **IP Resolver**: Resolve domain names to IP addresses
+- **XSS Scanner**: Scan URLs for potential XSS vulnerabilities
+- **Port Scanner**: Scan open ports on a given domain
+- **Security Headers Check**: Analyze security-related HTTP headers
+- **Login Page Discovery**: Find login pages on a website
+- **Brute Force Login (Demo)**: Attempt login brute force (for demo/testfire.net)
+- **Modern Web UI**: Accessible via browser, can be launched from the GUI or command line
+
 ---
 
 ## 📖 Usage Guide
@@ -168,6 +192,16 @@ python3 main.py
 2. Use "String Analysis" to extract readable text
 3. Use "Binwalk" to find embedded files
 4. Use "Hex Viewer" for byte-level analysis
+
+#### Web Analysis
+1. Navigate to the Web Analyzer module
+2. Use "HTTP Headers Analysis" to inspect HTTP response headers
+3. Use "IP Resolver" to resolve domain names to IP addresses
+4. Use "XSS Scanner" to scan URLs for potential XSS vulnerabilities
+5. Use "Port Scanner" to scan open ports on a given domain
+6. Use "Security Headers Check" to analyze security-related HTTP headers
+7. Use "Login Page Discovery" to find login pages on a website
+8. Use "Brute Force Login (Demo)" to attempt login brute force (for demo/testfire.net)
 
 ---
 
@@ -221,7 +255,8 @@ ForensicsMainHand/
     ├── modules/                 # Feature modules
     │   ├── cryptography/        # Cryptography tools
     │   ├── file_analyzer/       # File analysis
-    │   └── photo_analyzer/      # Image analysis
+    │   ├── photo_analyzer/      # Image analysis
+    │   └── web_analyzer_project/ # Web analyzer (Flask app)
     ├── ui/                      # User interface
     └── utils/                   # Utility functions
 ```

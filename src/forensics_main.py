@@ -6,6 +6,8 @@ from tkinter import ttk, messagebox
 import os
 import sys
 from typing import Optional, Union
+import threading
+import webbrowser
 
 # Add the modules directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
@@ -207,6 +209,18 @@ class ForensicsToolkitWindow:
                                        command=self.open_file_analyzer, style='primary')
         self.file_button.pack(pady=(0, Theme.get_spacing('medium')))
         
+        # Web Analyzer Button (new)
+        web_frame = tk.Frame(buttons_frame, bg=Theme.get_color('secondary'), relief='raised', bd=2)
+        web_frame.grid(row=1, column=1, padx=Theme.get_spacing('medium'), pady=Theme.get_spacing('medium'), sticky='nsew')
+        web_icon = tk.Label(web_frame, text="🌐", font=('Arial', 48), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        web_icon.pack(pady=(Theme.get_spacing('medium'), Theme.get_spacing('small')))
+        web_title = tk.Label(web_frame, text="Web Analyzer", font=Theme.get_font('heading'), bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
+        web_title.pack()
+        web_desc = tk.Label(web_frame, text="Web Recon\nVulnerability Scan\nHeaders & Ports", font=Theme.get_font('small'), bg=Theme.get_color('secondary'), fg=Theme.get_color('text_secondary'), justify='center')
+        web_desc.pack(pady=(0, Theme.get_spacing('medium')))
+        self.web_button = ModernButton(web_frame, text="Launch Web Analyzer", command=self.launch_web_analyzer, style='primary')
+        self.web_button.pack(pady=(0, Theme.get_spacing('medium')))
+        
     def create_footer(self):
         """Create footer with status information"""
         footer_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
@@ -291,4 +305,31 @@ class ForensicsToolkitWindow:
             self.photo_analyzer_frame.pack_forget()  # type: ignore
             self.crypto_frame.pack(fill='both', expand=True)  # type: ignore
         except Exception as e:
-            messagebox.showerror("Error", f"Error opening Cryptography module: {str(e)}") 
+            messagebox.showerror("Error", f"Error opening Cryptography module: {str(e)}")
+
+    def launch_web_analyzer(self):
+        """Launch the Flask web analyzer in a separate thread and show a clickable hyperlink"""
+        def run_flask():
+            import webanalyzer
+            webanalyzer.app.run(debug=True, use_reloader=False)
+        threading.Thread(target=run_flask, daemon=True).start()
+
+        # Create a new window with a clickable hyperlink
+        link_window = tk.Toplevel(self.root)
+        link_window.title("Web Analyzer Launched")
+        link_window.geometry("350x120")
+        link_window.configure(bg=Theme.get_color('primary'))
+
+        info_label = tk.Label(link_window, text="Web Analyzer is running!", font=Theme.get_font('heading'), bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
+        info_label.pack(pady=(20, 5))
+
+        url = "http://127.0.0.1:5000"
+        def open_link(event=None):
+            webbrowser.open(url)
+
+        link_label = tk.Label(link_window, text="Open Web Analyzer in Browser", font=Theme.get_font('default'), fg="blue", cursor="hand2", bg=Theme.get_color('primary'))
+        link_label.pack()
+        link_label.bind("<Button-1>", open_link)
+
+        url_label = tk.Label(link_window, text=url, font=Theme.get_font('small'), fg=Theme.get_color('text_secondary'), bg=Theme.get_color('primary'))
+        url_label.pack(pady=(5, 10)) 
