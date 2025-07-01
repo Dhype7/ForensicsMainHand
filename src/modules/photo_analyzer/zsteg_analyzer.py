@@ -145,7 +145,7 @@ class ZstegAnalyzer:
         
         return result
     
-    def extract_data(self, file_path: str, channel: str = None, 
+    def extract_data(self, file_path: str, channel: Optional[str] = None, 
                     bits: int = 1) -> Dict[str, Any]:
         """
         Extract data from specific channel/bits
