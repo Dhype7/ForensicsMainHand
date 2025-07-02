@@ -62,6 +62,33 @@ class Theme:
             'metadata_key': '#FFC107',
             'metadata_value': '#17A2B8',
             'highlight': '#DDEEFF',
+        },
+        'nyx': {
+            'primary': '#0a0a23',  # deep dark blue
+            'secondary': '#101020',  # almost black
+            'accent': '#00bfff',  # NYX blue for highlights
+            'accent_hover': '#0080ff',
+            'text_primary': '#e0e6f0',
+            'text_secondary': '#7faaff',
+            'text_muted': '#4a668a',
+            'button_bg': '#101020',
+            'button_fg': '#e0e6f0',
+            'button_hover': '#1a1a2f',
+            'entry_bg': '#101020',
+            'entry_fg': '#e0e6f0',
+            'text_bg': '#0a0a23',
+            'text_fg': '#e0e6f0',
+            'success': '#28A745',
+            'warning': '#FFC107',
+            'error': '#DC3545',
+            'info': '#17A2B8',
+            'section_header': '#00bfff',
+            'data_value': '#28A745',
+            'metadata_key': '#FFC107',
+            'metadata_value': '#17A2B8',
+            'highlight': '#0a0a40',
+            'nyx_digit': '#1e90ff',  # special blue for 0/1 digits
+            'nyx_digit_border': '#000000',
         }
     }
     
@@ -86,7 +113,7 @@ class Theme:
     BORDER_RADIUS = 5
     
     # Current theme name
-    _current_theme = 'dark'
+    _current_theme = 'nyx'
     
     @classmethod
     def get_color(cls, color_name: str) -> str:

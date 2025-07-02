@@ -8,12 +8,13 @@ import sys
 from typing import Optional, Union
 import threading
 import webbrowser
+from PIL import Image, ImageTk
 
 # Add the modules directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'modules'))
 
 from ui.theme import Theme
-from ui.widgets import ModernButton
+from ui.widgets import ModernButton, NYXBackground
 from config.settings import Settings
 from modules.file_analyzer.file_main import FileAnalyzerMainWindow
 from modules.photo_analyzer.main_window import MainWindow as PhotoAnalyzerMainWindow
@@ -25,9 +26,10 @@ class ForensicsToolkitWindow:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.theme_var = tk.StringVar(value=Theme.get_current_theme())
-        self.file_analyzer_frame = FileAnalyzerMainWindow(self.root, self.show_main_menu)
-        self.photo_analyzer_frame = PhotoAnalyzerMainWindow(self.root, self.show_main_menu)
-        self.crypto_frame = CryptoMainWindow(self.root, self.show_main_menu)
+        # Pass global theme change callback to submodules
+        self.file_analyzer_frame = FileAnalyzerMainWindow(self.root, self.show_main_menu, theme_change_callback=self.global_on_theme_change, theme_var=self.theme_var)
+        self.photo_analyzer_frame = PhotoAnalyzerMainWindow(self.root, self.show_main_menu, theme_change_callback=self.global_on_theme_change, theme_var=self.theme_var)
+        self.crypto_frame = CryptoMainWindow(self.root, self.show_main_menu, theme_change_callback=self.global_on_theme_change, theme_var=self.theme_var)
         self.setup_window()
         self.create_widgets()
         self.setup_layout()
@@ -60,16 +62,15 @@ class ForensicsToolkitWindow:
         self.main_frame = tk.Frame(self.root, bg=Theme.get_color('primary'))
         self.main_frame.pack(fill='both', expand=True, padx=Theme.get_spacing('large'), 
                            pady=Theme.get_spacing('large'))
-        
+        # NYX background inside main_frame
+        self.nyx_bg = NYXBackground(self.main_frame)
+        self.nyx_bg.place(x=0, y=0, relwidth=1, relheight=1)
         # Header
         self.create_header()
-        
         # Main content area
         self.create_main_content()
-        
         # Footer
         self.create_footer()
-        
         # File Analyzer frame (hidden by default)
         self.file_analyzer_frame.pack_forget()  # type: ignore
         self.photo_analyzer_frame.pack_forget()  # type: ignore
@@ -77,21 +78,30 @@ class ForensicsToolkitWindow:
         
     def create_header(self):
         """Create application header"""
-        header_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
+        header_frame = tk.Frame(self.main_frame)
         header_frame.pack(fill='x', pady=(0, Theme.get_spacing('large')))
         
-        # Title
+        # Title with NYX logo
+        try:
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(header_frame, image=logo, bg=Theme.get_color('primary'))
+            setattr(logo_label, "image", logo)  # Keep reference
+            logo_label.pack(side='left', padx=(0, 8))
+        except Exception:
+            logo_label = tk.Label(header_frame, text="NYX", font=("Arial", 16, "bold"), fg="#FFD600", bg=Theme.get_color('primary'))
+            logo_label.pack(side='left', padx=(0, 8))
         title_label = tk.Label(header_frame, 
                               text="Forensics Toolkit",
                               font=Theme.get_font('title'),
-                              bg=Theme.get_color('primary'),
-                              fg=Theme.get_color('accent'))
+                              fg=Theme.get_color('accent'),
+                              bg=Theme.get_color('primary'))
         title_label.pack(side='left')
         
         # Theme selector
         theme_label = tk.Label(header_frame, 
                               text="Theme:", 
-                              bg=Theme.get_color('primary'), 
                               fg=Theme.get_color('text_secondary'), 
                               font=Theme.get_font('default'))
         theme_label.pack(side='right', padx=(0, 5))
@@ -108,129 +118,125 @@ class ForensicsToolkitWindow:
         subtitle_label = tk.Label(header_frame,
                                  text="Comprehensive Digital Forensics Analysis Suite",
                                  font=Theme.get_font('default'),
-                                 bg=Theme.get_color('primary'),
                                  fg=Theme.get_color('text_secondary'))
         subtitle_label.pack(anchor='w')
         
     def create_main_content(self):
-        """Create main content area with three module buttons"""
-        content_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
+        """Create main content area with four large square module buttons in a 2x2 grid"""
+        content_frame = tk.Frame(self.main_frame)
         content_frame.pack(fill='both', expand=True, pady=Theme.get_spacing('large'))
-        
+
         # Welcome message
         welcome_label = tk.Label(content_frame,
                                 text="Select a module to begin analysis:",
                                 font=Theme.get_font('heading'),
-                                bg=Theme.get_color('primary'),
-                                fg=Theme.get_color('text_primary'))
+                                fg=Theme.get_color('text_primary'),
+                                bg=Theme.get_color('primary'))
         welcome_label.pack(pady=(0, Theme.get_spacing('large')))
-        
+
         # Buttons container
         buttons_frame = tk.Frame(content_frame, bg=Theme.get_color('primary'))
-        buttons_frame.pack(expand=True)
-        
-        # Configure grid weights for centering
-        buttons_frame.columnconfigure(0, weight=1)
-        buttons_frame.columnconfigure(1, weight=1)
-        buttons_frame.columnconfigure(2, weight=1)
-        
-        # Cryptography Module Button
-        crypto_frame = tk.Frame(buttons_frame, bg=Theme.get_color('secondary'), 
-                               relief='raised', bd=2)
-        crypto_frame.grid(row=0, column=0, padx=Theme.get_spacing('medium'), 
-                         pady=Theme.get_spacing('medium'), sticky='nsew')
-        
-        crypto_icon = tk.Label(crypto_frame, text="🔐", font=('Arial', 48),
-                              bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
-        crypto_icon.pack(pady=(Theme.get_spacing('medium'), Theme.get_spacing('small')))
-        
-        crypto_title = tk.Label(crypto_frame, text="Cryptography", 
-                               font=Theme.get_font('heading'),
-                               bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
+        buttons_frame.pack(expand=True, fill='both')
+
+        # Configure grid weights for a 2x2 square layout
+        for i in range(2):
+            buttons_frame.columnconfigure(i, weight=1, uniform='col')
+            buttons_frame.rowconfigure(i, weight=1, uniform='row')
+
+        square_size = 320  # Size for each module square
+        icon_font = ('Arial', 64)
+        title_font = Theme.get_font('title')
+        desc_font = Theme.get_font('default')
+
+        # Cryptography Module Button (Top Left)
+        crypto_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        crypto_frame.grid(row=0, column=0, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
+        crypto_frame.grid_propagate(False)
+        crypto_icon = tk.Label(crypto_frame, text="🔐", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
+        crypto_icon.pack(pady=(Theme.get_spacing('large'), Theme.get_spacing('small')))
+        crypto_title = tk.Label(crypto_frame, text="Cryptography", font=title_font, fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'))
         crypto_title.pack()
-        
-        crypto_desc = tk.Label(crypto_frame, text="Encryption/Decryption\nHash Analysis\nKey Management",
-                              font=Theme.get_font('small'),
-                              bg=Theme.get_color('secondary'), fg=Theme.get_color('text_secondary'),
-                              justify='center')
-        crypto_desc.pack(pady=(0, Theme.get_spacing('medium')))
-        
-        self.crypto_button = ModernButton(crypto_frame, text="Open Cryptography",
-                                         command=self.open_cryptography, style='primary')
+        crypto_desc = tk.Label(
+            crypto_frame,
+            text="Encrypt and decrypt messages using both classical and modern algorithms. Analyze hashes, manage cryptographic keys, and experiment with cipher techniques for secure communication and CTF challenges.",
+            font=desc_font,
+            fg=Theme.get_color('text_secondary'),
+            bg=Theme.get_color('secondary'),
+            wraplength=square_size-30,
+            justify='center')
+        crypto_desc.pack(pady=(Theme.get_spacing('small'), Theme.get_spacing('medium')))
+        self.crypto_button = ModernButton(crypto_frame, text="Open Cryptography", command=self.open_cryptography, style='primary')
         self.crypto_button.pack(pady=(0, Theme.get_spacing('medium')))
-        
-        # Photo Analyzer Module Button
-        photo_frame = tk.Frame(buttons_frame, bg=Theme.get_color('secondary'), 
-                              relief='raised', bd=2)
-        photo_frame.grid(row=0, column=1, padx=Theme.get_spacing('medium'), 
-                        pady=Theme.get_spacing('medium'), sticky='nsew')
-        
-        photo_icon = tk.Label(photo_frame, text="📷", font=('Arial', 48),
-                             bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
-        photo_icon.pack(pady=(Theme.get_spacing('medium'), Theme.get_spacing('small')))
-        
-        photo_title = tk.Label(photo_frame, text="Photo Analyzer", 
-                              font=Theme.get_font('heading'),
-                              bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
+
+        # Photo Analyzer Module Button (Top Right)
+        photo_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        photo_frame.grid(row=0, column=1, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
+        photo_frame.grid_propagate(False)
+        photo_icon = tk.Label(photo_frame, text="📷", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
+        photo_icon.pack(pady=(Theme.get_spacing('large'), Theme.get_spacing('small')))
+        photo_title = tk.Label(photo_frame, text="Photo Analyzer", font=title_font, fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'))
         photo_title.pack()
-        
-        photo_desc = tk.Label(photo_frame, text="EXIF Analysis\nSteganography\nMetadata Extraction",
-                             font=Theme.get_font('small'),
-                             bg=Theme.get_color('secondary'), fg=Theme.get_color('text_secondary'),
-                             justify='center')
-        photo_desc.pack(pady=(0, Theme.get_spacing('medium')))
-        
-        self.photo_button = ModernButton(photo_frame, text="Open Photo Analyzer",
-                                        command=self.open_photo_analyzer, style='primary')
+        photo_desc = tk.Label(
+            photo_frame,
+            text="Investigate images for hidden information. Extract and analyze EXIF metadata, perform steganography detection, run OCR, and uncover secrets embedded in photos for forensic or CTF use.",
+            font=desc_font,
+            fg=Theme.get_color('text_secondary'),
+            bg=Theme.get_color('secondary'),
+            wraplength=square_size-30,
+            justify='center')
+        photo_desc.pack(pady=(Theme.get_spacing('small'), Theme.get_spacing('medium')))
+        self.photo_button = ModernButton(photo_frame, text="Open Photo Analyzer", command=self.open_photo_analyzer, style='primary')
         self.photo_button.pack(pady=(0, Theme.get_spacing('medium')))
-        
-        # File Analyzer Module Button
-        file_frame = tk.Frame(buttons_frame, bg=Theme.get_color('secondary'), 
-                             relief='raised', bd=2)
-        file_frame.grid(row=0, column=2, padx=Theme.get_spacing('medium'), 
-                       pady=Theme.get_spacing('medium'), sticky='nsew')
-        
-        file_icon = tk.Label(file_frame, text="📁", font=('Arial', 48),
-                            bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
-        file_icon.pack(pady=(Theme.get_spacing('medium'), Theme.get_spacing('small')))
-        
-        file_title = tk.Label(file_frame, text="File Analyzer", 
-                             font=Theme.get_font('heading'),
-                             bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
+
+        # File Analyzer Module Button (Bottom Left)
+        file_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        file_frame.grid(row=1, column=0, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
+        file_frame.grid_propagate(False)
+        file_icon = tk.Label(file_frame, text="📁", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
+        file_icon.pack(pady=(Theme.get_spacing('large'), Theme.get_spacing('small')))
+        file_title = tk.Label(file_frame, text="File Analyzer", font=title_font, fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'))
         file_title.pack()
-        
-        file_desc = tk.Label(file_frame, text="File Carving\nString Analysis\nBinary Analysis",
-                            font=Theme.get_font('small'),
-                            bg=Theme.get_color('secondary'), fg=Theme.get_color('text_secondary'),
-                            justify='center')
-        file_desc.pack(pady=(0, Theme.get_spacing('medium')))
-        
-        self.file_button = ModernButton(file_frame, text="Open File Analyzer",
-                                       command=self.open_file_analyzer, style='primary')
+        file_desc = tk.Label(
+            file_frame,
+            text="Deep-dive into files to extract hidden content, recover deleted data, analyze binary structures, and search for suspicious strings. Includes file carving, hex viewing, and format identification.",
+            font=desc_font,
+            fg=Theme.get_color('text_secondary'),
+            bg=Theme.get_color('secondary'),
+            wraplength=square_size-30,
+            justify='center')
+        file_desc.pack(pady=(Theme.get_spacing('small'), Theme.get_spacing('medium')))
+        self.file_button = ModernButton(file_frame, text="Open File Analyzer", command=self.open_file_analyzer, style='primary')
         self.file_button.pack(pady=(0, Theme.get_spacing('medium')))
-        
-        # Web Analyzer Button (new)
-        web_frame = tk.Frame(buttons_frame, bg=Theme.get_color('secondary'), relief='raised', bd=2)
-        web_frame.grid(row=1, column=1, padx=Theme.get_spacing('medium'), pady=Theme.get_spacing('medium'), sticky='nsew')
-        web_icon = tk.Label(web_frame, text="🌐", font=('Arial', 48), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
-        web_icon.pack(pady=(Theme.get_spacing('medium'), Theme.get_spacing('small')))
-        web_title = tk.Label(web_frame, text="Web Analyzer", font=Theme.get_font('heading'), bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
+
+        # Web Analyzer Module Button (Bottom Right)
+        web_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        web_frame.grid(row=1, column=1, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
+        web_frame.grid_propagate(False)
+        web_icon = tk.Label(web_frame, text="🌐", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
+        web_icon.pack(pady=(Theme.get_spacing('large'), Theme.get_spacing('small')))
+        web_title = tk.Label(web_frame, text="Web Analyzer", font=title_font, fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'))
         web_title.pack()
-        web_desc = tk.Label(web_frame, text="Web Recon\nVulnerability Scan\nHeaders & Ports", font=Theme.get_font('small'), bg=Theme.get_color('secondary'), fg=Theme.get_color('text_secondary'), justify='center')
-        web_desc.pack(pady=(0, Theme.get_spacing('medium')))
+        web_desc = tk.Label(
+            web_frame,
+            text="Perform reconnaissance and vulnerability scanning on websites. Analyze HTTP headers, scan open ports, gather metadata, and identify potential security issues for digital forensics and CTFs.",
+            font=desc_font,
+            fg=Theme.get_color('text_secondary'),
+            bg=Theme.get_color('secondary'),
+            wraplength=square_size-30,
+            justify='center')
+        web_desc.pack(pady=(Theme.get_spacing('small'), Theme.get_spacing('medium')))
         self.web_button = ModernButton(web_frame, text="Launch Web Analyzer", command=self.launch_web_analyzer, style='primary')
         self.web_button.pack(pady=(0, Theme.get_spacing('medium')))
-        
+            
     def create_footer(self):
-        """Create footer with status information"""
-        footer_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
+        """Create footer with status information and credits button"""
+        footer_frame = tk.Frame(self.main_frame)
         footer_frame.pack(fill='x', pady=(Theme.get_spacing('large'), 0))
         
         # Status info
         status_label = tk.Label(footer_frame,
                                text=f"Forensics Toolkit v{Settings.APP_VERSION} | Ready",
                                font=Theme.get_font('small'),
-                               bg=Theme.get_color('primary'),
                                fg=Theme.get_color('text_muted'))
         status_label.pack(side='left')
         
@@ -238,9 +244,120 @@ class ForensicsToolkitWindow:
         copyright_label = tk.Label(footer_frame,
                                   text="© 2024 Forensics Toolkit",
                                   font=Theme.get_font('small'),
-                                  bg=Theme.get_color('primary'),
                                   fg=Theme.get_color('text_muted'))
         copyright_label.pack(side='right')
+
+        # Credits & License Button (bottom right)
+        credits_btn = tk.Button(
+            footer_frame,
+            text="Credits & License",
+            font=Theme.get_font('button'),
+            bg='#FFD600',  # Yellow
+            fg='#222',
+            activebackground='#FFEA00',
+            activeforeground='#222',
+            relief='raised',
+            bd=1,
+            cursor='hand2',
+            command=self.show_credits_popup
+        )
+        credits_btn.pack(side='right', padx=(0, 10))
+
+    def show_credits_popup(self):
+        """Show a professional popup window with credits, license, and NYX logo"""
+        popup = tk.Toplevel(self.root)
+        popup.title("Credits & License")
+        popup.configure(bg='white')
+        popup.geometry('520x620')
+        popup.resizable(False, False)
+
+        # Load and show logo
+        try:
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((120, 135), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(popup, image=logo, bg='white')
+            setattr(logo_label, "image", logo)  # Keep reference: required for Tkinter to display image  # Keep reference: required for Tkinter to display image
+            logo_label.pack(pady=(24, 8))
+        except Exception:
+            logo_label = tk.Label(popup, text="NYX", font=("Arial", 32, "bold"), fg="#FFD600", bg='white')
+            logo_label.pack(pady=(24, 8))
+
+        # Project Title
+        title_label = tk.Label(
+            popup,
+            text="Forensics Toolkit",
+            font=("Segoe UI", 16, "bold"),
+            fg="#222",
+            bg="white"
+        )
+        title_label.pack(pady=(0, 6))
+
+        # Credits Section (rewritten professionally)
+        credits_text = (
+            "Lead Developer: Abdullah Ibrahim (Dhype7)\n"
+            "Web Analyzer developer: Saif Fadhil\n"
+            "Team: NYX\n\n"
+            "This project was created for the sake of helping the CTF beginners.\n"
+            "Special thanks to all contributors and the open-source community."
+        )
+        credits_label = tk.Label(
+            popup,
+            text=credits_text,
+            font=("Segoe UI", 11),
+            fg="#333",
+            bg="white",
+            justify='center',
+            wraplength=480
+        )
+        credits_label.pack(pady=(0, 18))
+
+        # Divider
+        divider = tk.Frame(popup, bg="#FFD600", height=2, width=420)
+        divider.pack(pady=(0, 18))
+
+        # License Section
+        license_title = tk.Label(
+            popup,
+            text="License: MIT",
+            font=("Segoe UI", 12, "bold"),
+            fg="#FFD600",
+            bg="white"
+        )
+        license_title.pack(pady=(0, 4))
+
+        license_text = (
+            "This software is released under the MIT License.\n\n"
+            "You are free to use, modify, and distribute this software, "
+            "provided that the original copyright and license notice "
+            "are included in all copies or substantial portions of the software.\n\n"
+            "THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND."
+        )
+        license_label = tk.Label(
+            popup,
+            text=license_text,
+            font=("Segoe UI", 10),
+            fg="#444",
+            bg="white",
+            wraplength=400,
+            justify='left'
+        )
+        license_label.pack(pady=(0, 18), padx=20)
+
+        # Close button
+        close_btn = tk.Button(
+            popup,
+            text="Close",
+            command=popup.destroy,
+            bg='#FFD600',
+            fg='#222',
+            font=Theme.get_font('button'),
+            relief='raised',
+            bd=1,
+            cursor='hand2',
+            width=12
+        )
+        close_btn.pack(pady=(0, 24))
         
     def setup_layout(self):
         """Setup layout configuration"""
@@ -268,11 +385,27 @@ class ForensicsToolkitWindow:
         
         update_widget_colors(self.root)
         
-    def on_theme_change(self, event=None):
-        """Handle theme change"""
+        # NYX background logic
+        if Theme.get_current_theme() == 'nyx':
+            self.nyx_bg.place(x=0, y=0, relwidth=1, relheight=1)
+            # self.nyx_bg.lift()  # Removed to fix Tkinter error
+            self.nyx_bg.redraw()
+        else:
+            self.nyx_bg.place_forget()
+        
+    def global_on_theme_change(self, *args, **kwargs):
+        """Update theme everywhere when changed from any window"""
         Theme.set_theme(self.theme_var.get())
         self.apply_theme()
-        
+        self.file_analyzer_frame.apply_theme_to_all_widgets()
+        self.photo_analyzer_frame.apply_theme_to_all_widgets()
+        self.crypto_frame.apply_theme_to_all_widgets()
+        self.root.update_idletasks()
+
+    def on_theme_change(self, event=None):
+        """Handle theme change (main window)"""
+        self.global_on_theme_change()
+
     def show_main_menu(self):
         self.file_analyzer_frame.pack_forget()  # type: ignore
         self.photo_analyzer_frame.pack_forget()  # type: ignore

@@ -31,16 +31,21 @@ from .hex_viewer import HexViewerWindow
 
 class MainWindow(tk.Frame):
     """Main application frame for Photo Analyzer"""
-    def __init__(self, parent, back_callback: Callable[[], None], *args, **kwargs) -> None:
+    def __init__(self, parent, back_callback: Callable[[], None], theme_change_callback=None, theme_var=None, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.back_callback = back_callback
+        self.theme_change_callback = theme_change_callback
         self.selected_file_path: Optional[str] = None
         self.image_label: Optional[tk.Label] = None
         self.result_text: Optional[tk.Text] = None
         self.status_bar: Optional[StatusBar] = None
         self.file_selector: Optional[FileSelector] = None
         self.main_frame: Optional[tk.Frame] = None
-        self.theme_var = tk.StringVar(value=Theme.get_current_theme())
+        if theme_var is None:
+            self.theme_var = tk.StringVar(value=Theme.get_current_theme())
+        else:
+            self.theme_var = theme_var
+        self.theme_var.trace_add('write', self._on_external_theme_change)
         self.result_frame: Optional[tk.Frame] = None
         self.result_search_var = tk.StringVar()
         self.result_content = ""
@@ -66,6 +71,16 @@ class MainWindow(tk.Frame):
         self.setup_layout()
         self.apply_theme_to_all_widgets()
 
+    def _on_external_theme_change(self, *args):
+        # Called when the global theme_var changes
+        if self.theme_var.get() != Theme.get_current_theme():
+            Theme.set_theme(self.theme_var.get())
+        self.apply_theme_to_all_widgets()
+        # If there is a theme dropdown, update its value
+        for child in self.winfo_children():
+            if isinstance(child, ttk.Combobox):
+                child.set(self.theme_var.get())
+
     def create_widgets(self):
         # Main container
         self.main_frame = tk.Frame(self, bg=Theme.get_color('primary'))
@@ -86,12 +101,19 @@ class MainWindow(tk.Frame):
         # Back button
         back_btn = ModernButton(header_frame, text="← Back", command=self.back_callback, style='secondary')
         back_btn.pack(side='left', padx=(0, 10))
+        # NYX logo
+        try:
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(header_frame, image=logo, bg=Theme.get_color('primary'))
+            setattr(logo_label, "image", logo)
+            logo_label.pack(side='left', padx=(0, 8))
+        except Exception:
+            logo_label = tk.Label(header_frame, text="NYX", font=("Arial", 16, "bold"), fg="#FFD600", bg=Theme.get_color('primary'))
+            logo_label.pack(side='left', padx=(0, 8))
         # Title
-        title_label = tk.Label(header_frame, 
-                              text=Settings.APP_NAME,
-                              font=Theme.get_font('title'),
-                              bg=Theme.get_color('primary'),
-                              fg=Theme.get_color('accent'))
+        title_label = tk.Label(header_frame, text=Settings.APP_NAME, font=Theme.get_font('title'), bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
         title_label.pack(side='left')
         # Theme selector
         theme_label = tk.Label(header_frame, text="Theme:", bg=Theme.get_color('primary'), fg=Theme.get_color('text_secondary'), font=Theme.get_font('default'))
@@ -189,9 +211,12 @@ class MainWindow(tk.Frame):
                                 subchild.configure(bg=Theme.get_color('secondary'), fg=Theme.get_color('text_primary'))
 
     def on_theme_change(self, event=None):
-        Theme.set_theme(self.theme_var.get())
-        self.apply_theme_to_all_widgets()
-        self.refresh_result_area_theme()
+        if self.theme_change_callback:
+            self.theme_change_callback()
+        else:
+            Theme.set_theme(self.theme_var.get())
+            self.apply_theme_to_all_widgets()
+            self.refresh_result_area_theme()
         self.update_idletasks()
 
     def refresh_result_area_theme(self):
@@ -3138,6 +3163,9 @@ After installation, restart the application and try again."""
             messagebox.showinfo("Flags Found", f"Copied {len(flags)} flag(s) to clipboard.\n\n" + '\n'.join(flags[:10]) + ("\n..." if len(flags) > 10 else ""))
         else:
             messagebox.showinfo("No Flags", "No flag-like patterns found in Zsteg findings.")
+
+    def apply_theme(self):
+        self.apply_theme_to_all_widgets()
 
 class SteganographyWindow:
     """Steganography analysis window"""

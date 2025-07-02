@@ -5,6 +5,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from typing import Callable, Optional, List, Any
 from .theme import Theme
+import random
+from PIL import Image, ImageDraw, ImageFont, ImageTk, ImageFilter
 
 class ModernButton(tk.Button):
     """Modern styled button with hover effects"""
@@ -275,4 +277,58 @@ class ToolButton(tk.Frame):
     
     def _on_leave(self, widget):
         """Mouse leave event"""
-        widget.configure(bg=Theme.get_color('button_bg')) 
+        widget.configure(bg=Theme.get_color('button_bg'))
+
+class NYXBackground(tk.Canvas):
+    """Animated NYX background with random 0/1 digits, blue color, black border, blur, and random rotation."""
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, highlightthickness=0, bd=0, **kwargs)
+        self.digits = []
+        self.images = []
+        self.bind('<Configure>', lambda e: self.redraw())
+        self._last_theme = Theme.get_current_theme()
+        self.redraw()
+
+    def redraw(self):
+        self.delete('all')
+        self.images.clear()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        if width < 10 or height < 10:
+            return
+        if Theme.get_current_theme() != 'nyx':
+            self.configure(bg=Theme.get_color('primary'))
+            return
+        self.configure(bg=Theme.get_color('primary'))
+        # Draw semi-transparent overlay
+        overlay = Image.new('RGBA', (width, height), (10, 10, 35, 220))  # RGBA, last value is alpha
+        overlay_img = ImageTk.PhotoImage(overlay)
+        self.images.append(overlay_img)
+        self.create_image(0, 0, image=overlay_img, anchor='nw')
+        # Parameters
+        num_digits = (width * height) // 2500  # density
+        font_size = 32
+        font = None
+        try:
+            font = ImageFont.truetype("DejaVuSansMono.ttf", font_size)
+        except Exception:
+            font = ImageFont.load_default()
+        for _ in range(num_digits):
+            digit = random.choice(['0', '1'])
+            x = random.randint(0, width)
+            y = random.randint(0, height)
+            angle = random.randint(0, 359)
+            # Create digit image
+            img = Image.new('RGBA', (font_size*2, font_size*2), (0,0,0,0))
+            draw = ImageDraw.Draw(img)
+            # Draw border
+            draw.text((font_size//2-2, font_size//2-2), digit, font=font, fill=Theme.get_color('nyx_digit_border'), anchor='mm')
+            # Draw digit
+            draw.text((font_size//2, font_size//2), digit, font=font, fill=Theme.get_color('nyx_digit'), anchor='mm')
+            # Blur
+            img = img.filter(ImageFilter.GaussianBlur(radius=1.2))
+            # Rotate
+            img = img.rotate(angle, expand=1)
+            tk_img = ImageTk.PhotoImage(img)
+            self.images.append(tk_img)  # keep reference
+            self.create_image(x, y, image=tk_img, anchor='center') 

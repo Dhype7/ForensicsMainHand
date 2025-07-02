@@ -7,6 +7,7 @@ import os
 import sys
 import threading
 from typing import Optional, Callable, Any, Union
+from PIL import Image, ImageTk
 
 # Add parent directories to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -18,16 +19,21 @@ from .file_utils import FileAnalyzerUtils
 
 class FileAnalyzerMainWindow(tk.Frame):
     """Main application frame for File Analyzer (CTF style)"""
-    def __init__(self, parent, back_callback: Callable[[], None], *args, **kwargs) -> None:
+    def __init__(self, parent, back_callback: Callable[[], None], theme_change_callback=None, theme_var=None, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.back_callback = back_callback
+        self.theme_change_callback = theme_change_callback
         self.selected_file_path: Optional[str] = None
         self.selected_wordlist_path: Optional[str] = None
         self.result_text: tk.Text
         self.status_bar: StatusBar
         self.file_selector: Optional[FileSelector] = None
         self.main_frame: Optional[tk.Frame] = None
-        self.theme_var = tk.StringVar(value=Theme.get_current_theme())
+        if theme_var is None:
+            self.theme_var = tk.StringVar(value=Theme.get_current_theme())
+        else:
+            self.theme_var = theme_var
+        self.theme_var.trace_add('write', self._on_external_theme_change)
         self.result_search_var = tk.StringVar()
         self.result_content = ""
         self.loading_overlay: Optional[tk.Frame] = None
@@ -55,6 +61,18 @@ class FileAnalyzerMainWindow(tk.Frame):
         # Back button
         back_btn = ModernButton(header_frame, text="← Back", command=self.back_callback, style='secondary')
         back_btn.pack(side='left', padx=(0, 10))
+        # NYX logo
+        try:
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(header_frame, image=logo, bg=Theme.get_color('primary'))
+            setattr(logo_label, "image", logo)
+            logo_label.pack(side='left', padx=(0, 8))
+        except Exception:
+            logo_label = tk.Label(header_frame, text="NYX", font=("Arial", 16, "bold"), fg="#FFD600", bg=Theme.get_color('primary'))
+            logo_label.pack(side='left', padx=(0, 8))
+        # Title
         title_label = tk.Label(header_frame, text="File Analyzer", font=Theme.get_font('title'), bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
         title_label.pack(side='left')
         theme_label = tk.Label(header_frame, text="Theme:", bg=Theme.get_color('primary'), fg=Theme.get_color('text_secondary'), font=Theme.get_font('default'))
@@ -224,8 +242,22 @@ class FileAnalyzerMainWindow(tk.Frame):
         update_widget_colors(self)
 
     def on_theme_change(self, event=None):
-        Theme.set_theme(self.theme_var.get())
+        if self.theme_change_callback:
+            self.theme_change_callback()
+        else:
+            Theme.set_theme(self.theme_var.get())
+            self.apply_theme_to_all_widgets()
+        self.update_idletasks()
+
+    def _on_external_theme_change(self, *args):
+        # Called when the global theme_var changes
+        if self.theme_var.get() != Theme.get_current_theme():
+            Theme.set_theme(self.theme_var.get())
         self.apply_theme_to_all_widgets()
+        # If there is a theme dropdown, update its value
+        for child in self.winfo_children():
+            if isinstance(child, ttk.Combobox):
+                child.set(self.theme_var.get())
 
     def load_file(self):
         if self.file_selector is None:
@@ -391,6 +423,9 @@ class FileAnalyzerMainWindow(tk.Frame):
             except Exception as e:
                 self.after(0, lambda: [self.hide_loading(), self.display_error(str(e))])
         threading.Thread(target=run, daemon=True).start()
+
+    def apply_theme(self):
+        self.apply_theme_to_all_widgets()
 
 if __name__ == "__main__":
     root = tk.Tk()

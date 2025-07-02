@@ -74,13 +74,11 @@ pip install --upgrade pip
 print_status "Installing Python libraries from requirements.txt..."
 if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
+    print_success "All Python dependencies from requirements.txt installed"
 else
-    print_warning "requirements.txt not found, installing basic dependencies..."
-    pip install pillow pytesseract exifread stegano pyzbar requests numpy opencv-python matplotlib scikit-image qrcode pypng cryptography pycryptodome geopy
+    print_error "requirements.txt not found! Please ensure the file exists."
+    exit 1
 fi
-
-# Install additional dependencies that might not be in requirements.txt
-pip install scikit-image pypng pycryptodome
 
 print_status "Verifying dependencies..."
 for tool in tesseract steghide exiftool binwalk hashcat zsteg; do
@@ -110,6 +108,17 @@ module_map = {
     'cryptography': 'cryptography',
     'pycryptodome': 'Crypto',
     'geopy': 'geopy',
+
+    'python-magic': 'magic',
+    'rarfile': 'rarfile',
+    'py7zr': 'py7zr',
+    'zstandard': 'zstandard',
+    'lz4': 'lz4',
+    'pyperclip': 'pyperclip',
+    'flask': 'flask',
+    'python-whois': 'whois',
+    'beautifulsoup4': 'bs4',
+    'dnspython': 'dns',
 }
 
 failed = []
@@ -194,6 +203,17 @@ declare -A critical_modules=(
     [pypng]=png
     [pycryptodome]=Crypto
     [requests]=requests
+
+    [python-magic]=magic
+    [rarfile]=rarfile
+    [py7zr]=py7zr
+    [zstandard]=zstandard
+    [lz4]=lz4
+    [pyperclip]=pyperclip
+    [flask]=flask
+    [python-whois]=whois
+    [beautifulsoup4]=bs4
+    [dnspython]=dns
 )
 
 for pkg in "${!critical_modules[@]}"; do
@@ -210,10 +230,7 @@ done
 
 print_success "Installation completed successfully!"
 
-echo "[+] Installing Python dependencies..."
-pip install -r requirements.txt
-
-echo "[+] Checking/installing system dependencies..."
+echo "[+] Checking/installing additional system dependencies..."
 if ! command -v unrar &> /dev/null; then
     echo "[!] 'unrar' not found. Installing (Debian/Ubuntu)..."
     sudo apt-get update && sudo apt-get install -y unrar
