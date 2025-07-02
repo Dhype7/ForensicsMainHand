@@ -624,10 +624,15 @@ class ClassicalCiphers:
 
 class CryptoMainWindow(tk.Frame):
     """Main frame for Cryptography module"""
-    def __init__(self, parent, back_callback: Callable[[], None], *args, **kwargs) -> None:
+    def __init__(self, parent, back_callback: Callable[[], None], theme_change_callback=None, theme_var=None, *args, **kwargs) -> None:
         super().__init__(parent, *args, **kwargs)
         self.back_callback = back_callback
-        self.theme_var = tk.StringVar(value=Theme.get_current_theme())
+        self.theme_change_callback = theme_change_callback
+        if theme_var is None:
+            self.theme_var = tk.StringVar(value=Theme.get_current_theme())
+        else:
+            self.theme_var = theme_var
+        self.theme_var.trace_add('write', self._on_external_theme_change)
         self.ciphers = ClassicalCiphers()
         self.current_cipher = tk.StringVar(value="caesar")
         self.output_font_size = 10
@@ -638,6 +643,7 @@ class CryptoMainWindow(tk.Frame):
         self.cipher_desc_label: Optional[tk.Label] = None
         self.theme_combo = None
         self.footer_frame = None
+        self.adv_font_size = 12  # Default font size for advanced section
         self.show_main_choice()
         self.create_footer()
         self.apply_theme()
@@ -657,14 +663,46 @@ class CryptoMainWindow(tk.Frame):
         # Back button at the top
         back_btn = tk.Button(self.content_frame, text="← Back", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.back_callback)
         back_btn.pack(anchor='nw', padx=20, pady=20)
+        # Title
         label = tk.Label(self.content_frame, text="Choose Cryptography Type", font=Theme.get_font('title'), fg=Theme.get_color('accent'), bg=Theme.get_color('primary'))
-        label.pack(pady=60)
-        btn_frame = tk.Frame(self.content_frame, bg=Theme.get_color('primary'))
-        btn_frame.pack(pady=40)
-        classical_btn = tk.Button(btn_frame, text="Classical", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), width=20, height=3, command=self.show_classical)
-        classical_btn.pack(side='left', padx=40)
-        advanced_btn = tk.Button(btn_frame, text="Advanced", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), width=20, height=3, command=self.show_advanced)
-        advanced_btn.pack(side='left', padx=40)
+        label.pack(pady=(20, 10))
+        # Large NYX logo between title and buttons
+        try:
+            from PIL import Image, ImageTk
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((140, 170), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(self.content_frame, image=logo, bg=Theme.get_color('primary'))
+            setattr(logo_label, "image", logo)
+            logo_label.pack(pady=(0, 32))
+        except Exception:
+            logo_label = tk.Label(self.content_frame, text="NYX", font=("Arial", 54, "bold"), fg="#FFD600", bg=Theme.get_color('primary'))
+            logo_label.pack(pady=(0, 32))
+        # Card layout for buttons
+        card_frame = tk.Frame(self.content_frame, bg=Theme.get_color('primary'))
+        card_frame.pack(expand=True)
+        # Classical Card
+        classical_card = tk.Frame(card_frame, bg=Theme.get_color('secondary'), bd=2, relief='ridge', padx=30, pady=30)
+        classical_card.grid(row=0, column=0, padx=40, pady=10, sticky='nsew')
+        classical_emoji = tk.Label(classical_card, text="🏛️", font=("Arial", 48), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        classical_emoji.pack(pady=(0, 10))
+        classical_btn = tk.Button(classical_card, text="Classical", font=("Segoe UI", 18, "bold"), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), width=12, height=2, command=self.show_classical, relief='raised', bd=2, cursor='hand2')
+        classical_btn.pack(pady=(0, 10))
+        classical_desc = tk.Label(classical_card, text="Explore classic ciphers like Caesar, Vigenère, Atbash, and more. Great for learning and CTFs!", font=("Segoe UI", 11), fg=Theme.get_color('text_secondary'), bg=Theme.get_color('secondary'), wraplength=260, justify='center')
+        classical_desc.pack()
+        # Advanced Card
+        advanced_card = tk.Frame(card_frame, bg=Theme.get_color('secondary'), bd=2, relief='ridge', padx=30, pady=30)
+        advanced_card.grid(row=0, column=1, padx=40, pady=10, sticky='nsew')
+        advanced_emoji = tk.Label(advanced_card, text="🚀", font=("Arial", 48), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        advanced_emoji.pack(pady=(0, 10))
+        advanced_btn = tk.Button(advanced_card, text="Advanced", font=("Segoe UI", 18, "bold"), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), width=12, height=2, command=self.show_advanced, relief='raised', bd=2, cursor='hand2')
+        advanced_btn.pack(pady=(0, 10))
+        advanced_desc = tk.Label(advanced_card, text="Modern crypto tools: AES, RSA, hashes, attacks, and more. For advanced users and real-world scenarios.", font=("Segoe UI", 11), fg=Theme.get_color('text_secondary'), bg=Theme.get_color('secondary'), wraplength=260, justify='center')
+        advanced_desc.pack()
+        # Make cards expand equally
+        card_frame.grid_columnconfigure(0, weight=1)
+        card_frame.grid_columnconfigure(1, weight=1)
+        card_frame.grid_rowconfigure(0, weight=1)
 
     def show_classical(self):
         self.clear_content()
@@ -684,7 +722,23 @@ class CryptoMainWindow(tk.Frame):
         # Title
         title_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
         title_frame.pack(fill='x', padx=10, pady=(10, 5))
-        title_label = tk.Label(title_frame, text="🔐 Classical Ciphers", font=Theme.get_font('title'), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        # NYX logo and Title (for main choice and section headers)
+        from PIL import Image, ImageTk
+        try:
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(title_frame, image=logo, bg=Theme.get_color('primary'))
+            setattr(logo_label, "image", logo)  # Keep reference
+            logo_label.pack(side='left', padx=(0, 8))
+        except Exception:
+            logo_label = tk.Label(title_frame, text="NYX", font=("Arial", 16, "bold"), fg="#FFD600", bg=Theme.get_color('primary'))
+            logo_label.pack(side='left', padx=(0, 8))
+        title_label = tk.Label(title_frame, 
+                              text="🔐 Classical Ciphers",
+                              font=Theme.get_font('title'),
+                              bg=Theme.get_color('primary'),
+                              fg=Theme.get_color('accent'))
         title_label.pack(side='left')
         # Cipher selection grid
         cipher_grid_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
@@ -1407,20 +1461,26 @@ class CryptoMainWindow(tk.Frame):
             self.theme_combo.configure(background=Theme.get_color('primary'), foreground=Theme.get_color('text_primary'))
 
     def on_theme_change(self, event=None):
-        """Handle theme change from the theme combo box."""
-        Theme.set_theme(self.theme_var.get())
-        self.apply_theme()
+        if self.theme_change_callback:
+            self.theme_change_callback()
+        else:
+            Theme.set_theme(self.theme_var.get())
+            self.apply_theme()
+        # No need to call update_idletasks here, main window will handle it
 
     def universal_zoom_in(self):
-        """Increase font size for input and output in classical section"""
+        """Increase font size for input and output in classical and advanced sections"""
         if self.current_view == 'classical' and hasattr(self, 'input_text_area') and hasattr(self, 'output_text_area'):
             current_font = self.input_text_area.cget('font')
             size = int(str(current_font).split()[-1]) + 1
             self.input_text_area.configure(font=("Courier", size))
             self.output_text_area.configure(font=("Courier", size))
+        elif self.current_view == 'advanced':
+            self.adv_font_size += 1
+            self._update_advanced_font_size()
 
     def universal_zoom_out(self):
-        """Decrease font size for input and output in classical section"""
+        """Decrease font size for input and output in classical and advanced sections"""
         if self.current_view == 'classical' and hasattr(self, 'input_text_area') and hasattr(self, 'output_text_area'):
             current_font = self.input_text_area.cget('font')
             size = int(str(current_font).split()[-1])
@@ -1428,6 +1488,54 @@ class CryptoMainWindow(tk.Frame):
                 size -= 1
                 self.input_text_area.configure(font=("Courier", size))
                 self.output_text_area.configure(font=("Courier", size))
+        elif self.current_view == 'advanced':
+            if self.adv_font_size > 6:
+                self.adv_font_size -= 1
+                self._update_advanced_font_size()
+
+    def _update_advanced_font_size(self):
+        """Update font size for all input/output widgets in the advanced section."""
+        # Try to update all known advanced widgets if they exist
+        # RSA
+        if hasattr(self, 'rsa_input'):
+            self.rsa_input.configure(font=("Courier", self.adv_font_size))
+        if hasattr(self, 'rsa_output'):
+            self.rsa_output.configure(font=("Courier", self.adv_font_size))
+        if hasattr(self, 'rsa_pub_key'):
+            self.rsa_pub_key.configure(font=("Courier", self.adv_font_size - 2))
+        if hasattr(self, 'rsa_priv_key'):
+            self.rsa_priv_key.configure(font=("Courier", self.adv_font_size - 2))
+        # AES
+        if hasattr(self, 'aes_input'):
+            self.aes_input.configure(font=("Courier", self.adv_font_size))
+        if hasattr(self, 'aes_output'):
+            self.aes_output.configure(font=("Courier", self.adv_font_size))
+        # Blowfish
+        if hasattr(self, 'blowfish_input'):
+            self.blowfish_input.configure(font=("Courier", self.adv_font_size))
+        if hasattr(self, 'blowfish_output'):
+            self.blowfish_output.configure(font=("Courier", self.adv_font_size))
+        # DES
+        if hasattr(self, 'des_input'):
+            self.des_input.configure(font=("Courier", self.adv_font_size))
+        if hasattr(self, 'des_output'):
+            self.des_output.configure(font=("Courier", self.adv_font_size))
+        # RC4
+        if hasattr(self, 'rc4_input'):
+            self.rc4_input.configure(font=("Courier", self.adv_font_size))
+        if hasattr(self, 'rc4_output'):
+            self.rc4_output.configure(font=("Courier", self.adv_font_size))
+        # Substitution, Caesar, OTP, Base, SHA256, MD5, HMAC, Magic Hasher, etc.
+        # Add similar blocks for other advanced ciphers as needed
+        # For generic update, loop through all children of adv_param_frame and update Text widgets
+        if hasattr(self, 'adv_param_frame'):
+            for widget in self.adv_param_frame.winfo_children():
+                if isinstance(widget, tk.Text):
+                    widget.configure(font=("Courier", self.adv_font_size))
+                # Recursively update children
+                for child in widget.winfo_children() if hasattr(widget, 'winfo_children') else []:
+                    if isinstance(child, tk.Text):
+                        child.configure(font=("Courier", self.adv_font_size))
 
     def create_advanced_section(self, parent_frame):
         """Full-featured, user-friendly Advanced Crypto GUI with advanced attacks and Magic Hasher."""
@@ -1437,25 +1545,41 @@ class CryptoMainWindow(tk.Frame):
         # Title
         title_frame = tk.Frame(parent_frame, bg=Theme.get_color('secondary'))
         title_frame.pack(fill='x', padx=10, pady=(10, 5))
-        title_label = tk.Label(title_frame, text=" Advanced Crypto", font=Theme.get_font('title'), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        # NYX logo and Title (for main choice and section headers)
+        from PIL import Image, ImageTk
+        try:
+            logo_img = Image.open("pics/Picsart_25-07-01_17-15-32-191.png")
+            logo_img = logo_img.resize((32, 32), Image.Resampling.LANCZOS)
+            logo = ImageTk.PhotoImage(logo_img)
+            logo_label = tk.Label(title_frame, image=logo, bg=Theme.get_color('primary'))
+            setattr(logo_label, "image", logo)  # Keep reference
+            logo_label.pack(side='left', padx=(0, 8))
+        except Exception:
+            logo_label = tk.Label(title_frame, text="NYX", font=("Arial", 16, "bold"), fg="#FFD600", bg=Theme.get_color('primary'))
+            logo_label.pack(side='left', padx=(0, 8))
+        title_label = tk.Label(title_frame, 
+                              text=" Advanced Crypto",
+                              font=Theme.get_font('title'),
+                              bg=Theme.get_color('primary'),
+                              fg=Theme.get_color('accent'))
         title_label.pack(side='left')
         # Cipher selection grid
         cipher_info = [
-            ("rsa", "RSA", "", "Asymmetric encryption (public/private key)."),
-            ("aes", "AES", "", "Symmetric block cipher (128/192/256-bit)."),
-            ("blowfish", "Blowfish", "", "Symmetric block cipher (variable key size)."),
-            ("des", "DES", "", "Symmetric block cipher (56-bit key)."),
-            ("rc4", "RC4", "", "Stream cipher (variable key size)."),
-            ("rail_fence", "Rail Fence (Adv)", "", "Zigzag cipher with brute force attack."),
-            ("substitution", "Substitution (Adv)", "", "Substitution with frequency analysis."),
-            ("caesar", "Caesar (Adv)", "", "Caesar with brute force/frequency analysis."),
-            ("otp", "OTP", "", "One-Time Pad (perfect secrecy)."),
-            ("base", "Base64/32/16", "", "Base encoding/decoding."),
-            ("sha256", "SHA-256", "", "Secure hash algorithm (256-bit)."),
-            ("md5", "MD5", "", "Hash function (128-bit, not secure)."),
-            ("hmac", "HMAC", "", "Keyed-hash message authentication code."),
-            ("magic_hasher", "Magic Hasher", "", "Identify and crack hashes with Hashcat."),
-            ("dots", "Dots", "", "Convert spaces to 0 and other chars to 1 (Dots cipher)."),
+            ("rsa", "RSA", "🔑", "Asymmetric encryption (public/private key)."),
+            ("aes", "AES", "🔒", "Symmetric block cipher (128/192/256-bit)."),
+            ("blowfish", "Blowfish", "🐡", "Symmetric block cipher (variable key size)."),
+            ("des", "DES", "🔐", "Symmetric block cipher (56-bit key)."),
+            ("rc4", "RC4", "💧", "Stream cipher (variable key size)."),
+            ("rail_fence", "Rail Fence (Adv)", "🚆", "Zigzag cipher with brute force attack."),
+            ("substitution", "Substitution (Adv)", "🔀", "Substitution with frequency analysis."),
+            ("caesar", "Caesar (Adv)", "🔤", "Caesar with brute force/frequency analysis."),
+            ("otp", "OTP", "🗝️", "One-Time Pad (perfect secrecy)."),
+            ("base", "Base64/32/16", "🔢", "Base encoding/decoding."),
+            ("sha256", "SHA-256", "🧮", "Secure hash algorithm (256-bit)."),
+            ("md5", "MD5", "🧩", "Hash function (128-bit, not secure)."),
+            ("hmac", "HMAC", "✉️", "Keyed-hash message authentication code."),
+            ("magic_hasher", "Magic Hasher", "🪄", "Identify and crack hashes with Hashcat."),
+            ("dots", "Dots", "⚫", "Convert spaces to 0 and other chars to 1 (Dots cipher)."),
             ("morse", "Morse Code", "•-", "Encode/decode Morse code from text or audio."),
         ]
         self.adv_cipher_buttons = {}
@@ -3333,6 +3457,17 @@ class CryptoMainWindow(tk.Frame):
         tk.Label(frame, text="Output:", font=("Arial", 10), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w', padx=10)
         self.morse_output = tk.Text(frame, height=8, font=("Courier", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
         self.morse_output.pack(fill='x', padx=10, pady=2)
+
+    def apply_theme_to_all_widgets(self):
+        self.apply_theme()
+
+    def _on_external_theme_change(self, *args):
+        # Called when the global theme_var changes
+        if self.theme_var.get() != Theme.get_current_theme():
+            Theme.set_theme(self.theme_var.get())
+        self.apply_theme()
+        if self.theme_combo is not None:
+            self.theme_combo.set(self.theme_var.get())
 
 def text_to_ascii_binary(text):
     return ' '.join(f'{ord(ch):08b}' for ch in text)
