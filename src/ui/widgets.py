@@ -228,6 +228,9 @@ class ToolButton(tk.Frame):
     def __init__(self, parent, text: str, description: str, 
                  command=None, icon: str = "🔧", **kwargs):
         super().__init__(parent, **kwargs)
+        self._enabled = True
+        self._command = command
+        self._widgets = []
         self._create_widgets(text, description, command, icon)
     
     def _create_widgets(self, text: str, description: str, command, icon: str):
@@ -238,6 +241,7 @@ class ToolButton(tk.Frame):
         btn_frame = tk.Frame(self, bg=Theme.get_color('button_bg'), 
                             relief='flat', bd=1)
         btn_frame.pack(fill='x', pady=Theme.get_spacing('small'))
+        self._widgets.append(btn_frame)
         
         # Icon and text
         icon_label = tk.Label(btn_frame, text=icon, 
@@ -245,10 +249,12 @@ class ToolButton(tk.Frame):
                              bg=Theme.get_color('button_bg'),
                              fg=Theme.get_color('text_primary'))
         icon_label.pack(side='left', padx=Theme.get_spacing('medium'))
+        self._widgets.append(icon_label)
         
         # Text frame
         text_frame = tk.Frame(btn_frame, bg=Theme.get_color('button_bg'))
         text_frame.pack(side='left', fill='x', expand=True, padx=Theme.get_spacing('small'))
+        self._widgets.append(text_frame)
         
         # Title
         title_label = tk.Label(text_frame, text=text,
@@ -256,6 +262,7 @@ class ToolButton(tk.Frame):
                               bg=Theme.get_color('button_bg'),
                               fg=Theme.get_color('text_primary'))
         title_label.pack(anchor='w')
+        self._widgets.append(title_label)
         
         # Description
         desc_label = tk.Label(text_frame, text=description,
@@ -263,21 +270,35 @@ class ToolButton(tk.Frame):
                              bg=Theme.get_color('button_bg'),
                              fg=Theme.get_color('text_secondary'))
         desc_label.pack(anchor='w')
+        self._widgets.append(desc_label)
         
         # Bind click events
         for widget in [btn_frame, icon_label, text_frame, title_label, desc_label]:
-            widget.bind('<Button-1>', lambda e: command() if command else None)
-            widget.bind('<Enter>', lambda e: self._on_enter(btn_frame))
-            widget.bind('<Leave>', lambda e: self._on_leave(btn_frame))
+            widget.bind('<Button-1>', lambda e: command() if command and self._enabled else None)
+            widget.bind('<Enter>', lambda e: self._on_enter(btn_frame) if self._enabled else None)
+            widget.bind('<Leave>', lambda e: self._on_leave(btn_frame) if self._enabled else None)
             widget.configure(cursor='hand2')
+    
+    def set_state(self, state: str):
+        """Enable or disable the tool button visually and functionally."""
+        self._enabled = (state == 'normal')
+        cursor = 'hand2' if self._enabled else 'arrow'
+        for widget in self.winfo_children():
+            if isinstance(widget, (tk.Label, tk.Frame)):
+                try:
+                    widget.configure(cursor=cursor)
+                except Exception:
+                    pass
     
     def _on_enter(self, widget):
         """Mouse enter event"""
-        widget.configure(bg=Theme.get_color('button_hover'))
+        if self._enabled:
+            widget.configure(bg=Theme.get_color('button_hover'))
     
     def _on_leave(self, widget):
         """Mouse leave event"""
-        widget.configure(bg=Theme.get_color('button_bg'))
+        if self._enabled:
+            widget.configure(bg=Theme.get_color('button_bg'))
 
 class NYXBackground(tk.Canvas):
     """Animated NYX background with random 0/1 digits, blue color, black border, blur, and random rotation."""

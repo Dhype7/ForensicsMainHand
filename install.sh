@@ -34,7 +34,8 @@ print_status "Updating package list..."
 sudo apt update || print_warning "Package list update had issues, continuing..."
 
 print_status "Installing system dependencies..."
-sudo apt install -y python3 python3-pip python3-tk python3-pil.imagetk tesseract-ocr steghide exiftool binwalk hashcat
+sudo apt install -y python3 python3-pip python3-tk python3-pil.imagetk tesseract-ocr steghide exiftool binwalk hashcat \
+    unzip p7zip-full p7zip-rar unrar tar gzip bzip2 xz-utils lzma zstd lz4 arj rar || print_warning "Some archive tools may not be available on all systems."
 
 # Install hash-identifier if available, otherwise use hashid
 if apt list --installed | grep -q hash-identifier; then
@@ -79,6 +80,9 @@ else
     print_error "requirements.txt not found! Please ensure the file exists."
     exit 1
 fi
+
+print_status "Installing Python modules for advanced archive support..."
+pip install --upgrade python-magic rarfile py7zr zstandard lz4 || print_warning "Some Python archive modules failed to install."
 
 print_status "Verifying dependencies..."
 for tool in tesseract steghide exiftool binwalk hashcat zsteg; do

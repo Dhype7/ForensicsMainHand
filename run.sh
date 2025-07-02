@@ -30,5 +30,5 @@ if [ ! -f "main.py" ]; then
 fi
 
 # Run the application
-print_success "Starting DemoAnalyzer..."
+print_success "Starting ForensicsMainHand..."
 python main.py 

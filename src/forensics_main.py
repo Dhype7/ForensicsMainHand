@@ -122,12 +122,12 @@ class ForensicsToolkitWindow:
         subtitle_label.pack(anchor='w')
         
     def create_main_content(self):
-        """Create main content area with four large square module buttons in a 2x2 grid"""
-        content_frame = tk.Frame(self.main_frame)
-        content_frame.pack(fill='both', expand=True, pady=Theme.get_spacing('large'))
+        """Create main content area with four large square module buttons in a 2x2 grid and a Next button"""
+        self.content_frame = tk.Frame(self.main_frame)
+        self.content_frame.pack(fill='both', expand=True, pady=Theme.get_spacing('large'))
 
         # Welcome message
-        welcome_label = tk.Label(content_frame,
+        welcome_label = tk.Label(self.content_frame,
                                 text="Select a module to begin analysis:",
                                 font=Theme.get_font('heading'),
                                 fg=Theme.get_color('text_primary'),
@@ -135,13 +135,13 @@ class ForensicsToolkitWindow:
         welcome_label.pack(pady=(0, Theme.get_spacing('large')))
 
         # Buttons container
-        buttons_frame = tk.Frame(content_frame, bg=Theme.get_color('primary'))
-        buttons_frame.pack(expand=True, fill='both')
+        self.buttons_frame = tk.Frame(self.content_frame, bg=Theme.get_color('primary'))
+        self.buttons_frame.pack(expand=True, fill='both')
 
         # Configure grid weights for a 2x2 square layout
         for i in range(2):
-            buttons_frame.columnconfigure(i, weight=1, uniform='col')
-            buttons_frame.rowconfigure(i, weight=1, uniform='row')
+            self.buttons_frame.columnconfigure(i, weight=1, uniform='col')
+            self.buttons_frame.rowconfigure(i, weight=1, uniform='row')
 
         square_size = 320  # Size for each module square
         icon_font = ('Arial', 64)
@@ -149,7 +149,7 @@ class ForensicsToolkitWindow:
         desc_font = Theme.get_font('default')
 
         # Cryptography Module Button (Top Left)
-        crypto_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        crypto_frame = tk.Frame(self.buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
         crypto_frame.grid(row=0, column=0, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
         crypto_frame.grid_propagate(False)
         crypto_icon = tk.Label(crypto_frame, text="🔐", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
@@ -169,7 +169,7 @@ class ForensicsToolkitWindow:
         self.crypto_button.pack(pady=(0, Theme.get_spacing('medium')))
 
         # Photo Analyzer Module Button (Top Right)
-        photo_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        photo_frame = tk.Frame(self.buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
         photo_frame.grid(row=0, column=1, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
         photo_frame.grid_propagate(False)
         photo_icon = tk.Label(photo_frame, text="📷", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
@@ -189,7 +189,7 @@ class ForensicsToolkitWindow:
         self.photo_button.pack(pady=(0, Theme.get_spacing('medium')))
 
         # File Analyzer Module Button (Bottom Left)
-        file_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        file_frame = tk.Frame(self.buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
         file_frame.grid(row=1, column=0, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
         file_frame.grid_propagate(False)
         file_icon = tk.Label(file_frame, text="📁", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
@@ -198,7 +198,7 @@ class ForensicsToolkitWindow:
         file_title.pack()
         file_desc = tk.Label(
             file_frame,
-            text="Deep-dive into files to extract hidden content, recover deleted data, analyze binary structures, and search for suspicious strings. Includes file carving, hex viewing, and format identification.",
+            text="Analyze and extract data from any file. Carve embedded files, extract strings, detect file types, entropy, stego, and more.",
             font=desc_font,
             fg=Theme.get_color('text_secondary'),
             bg=Theme.get_color('secondary'),
@@ -209,7 +209,7 @@ class ForensicsToolkitWindow:
         self.file_button.pack(pady=(0, Theme.get_spacing('medium')))
 
         # Web Analyzer Module Button (Bottom Right)
-        web_frame = tk.Frame(buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        web_frame = tk.Frame(self.buttons_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
         web_frame.grid(row=1, column=1, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'), sticky='nsew')
         web_frame.grid_propagate(False)
         web_icon = tk.Label(web_frame, text="🌐", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
@@ -227,6 +227,10 @@ class ForensicsToolkitWindow:
         web_desc.pack(pady=(Theme.get_spacing('small'), Theme.get_spacing('medium')))
         self.web_button = ModernButton(web_frame, text="Launch Web Analyzer", command=self.launch_web_analyzer, style='primary')
         self.web_button.pack(pady=(0, Theme.get_spacing('medium')))
+
+        # Small Next Button at the far right below the grid
+        self.next_button = ModernButton(self.content_frame, text="Next →", command=self.show_osint_grid, style='secondary')
+        self.next_button.pack(anchor='e', padx=Theme.get_spacing('large'), pady=(0, Theme.get_spacing('medium')))
             
     def create_footer(self):
         """Create footer with status information and credits button"""
@@ -397,9 +401,9 @@ class ForensicsToolkitWindow:
         """Update theme everywhere when changed from any window"""
         Theme.set_theme(self.theme_var.get())
         self.apply_theme()
-        self.file_analyzer_frame.apply_theme_to_all_widgets()
-        self.photo_analyzer_frame.apply_theme_to_all_widgets()
-        self.crypto_frame.apply_theme_to_all_widgets()
+        self.file_analyzer_frame.on_theme_change()
+        self.photo_analyzer_frame.on_theme_change()
+        self.crypto_frame.on_theme_change()
         self.root.update_idletasks()
 
     def on_theme_change(self, event=None):
@@ -439,6 +443,47 @@ class ForensicsToolkitWindow:
             self.crypto_frame.pack(fill='both', expand=True)  # type: ignore
         except Exception as e:
             messagebox.showerror("Error", f"Error opening Cryptography module: {str(e)}")
+
+    def show_osint_grid(self):
+        # Hide main content
+        self.content_frame.pack_forget()
+        # Create OSINT grid frame
+        self.osint_frame = tk.Frame(self.main_frame, bg=Theme.get_color('primary'))
+        self.osint_frame.pack(fill='both', expand=True, padx=Theme.get_spacing('large'), pady=Theme.get_spacing('large'))
+        # Centered OSINT module box
+        square_size = 320
+        icon_font = ('Arial', 64)
+        title_font = Theme.get_font('title')
+        desc_font = Theme.get_font('default')
+        osint_box = tk.Frame(self.osint_frame, relief='raised', bd=3, width=square_size, height=square_size, bg=Theme.get_color('secondary'))
+        osint_box.pack(expand=True, pady=(Theme.get_spacing('large'), Theme.get_spacing('large')))
+        osint_box.pack_propagate(False)
+        osint_icon = tk.Label(osint_box, text="🕵️‍♂️", font=icon_font, fg=Theme.get_color('accent'), bg=Theme.get_color('secondary'))
+        osint_icon.pack(pady=(Theme.get_spacing('large'), Theme.get_spacing('small')))
+        osint_title = tk.Label(osint_box, text="--OSINT--", font=title_font, fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'))
+        osint_title.pack()
+        osint_desc = tk.Label(
+            osint_box,
+            text="Open Source Intelligence tools for reconnaissance and investigation. (Coming Soon)",
+            font=desc_font,
+            fg=Theme.get_color('text_secondary'),
+            bg=Theme.get_color('secondary'),
+            wraplength=square_size-30,
+            justify='center')
+        osint_desc.pack(pady=(Theme.get_spacing('small'), Theme.get_spacing('medium')))
+        osint_btn = ModernButton(osint_box, text="OSINT Toolkit (Coming Soon)", command=self.show_osint_coming_soon, style='primary')
+        osint_btn.pack(pady=(0, Theme.get_spacing('medium')))
+        # Previous Button below the box
+        prev_btn = ModernButton(self.osint_frame, text="← Previous", command=self.show_main_grid, style='secondary')
+        prev_btn.pack(pady=(Theme.get_spacing('medium'), 0))
+
+    def show_osint_coming_soon(self):
+        messagebox.showinfo("Coming Soon", "The OSINT module is coming soon! Stay tuned.")
+
+    def show_main_grid(self):
+        if hasattr(self, 'osint_frame') and self.osint_frame:
+            self.osint_frame.pack_forget()
+        self.content_frame.pack(fill='both', expand=True, pady=Theme.get_spacing('large'))
 
     def launch_web_analyzer(self):
         """Launch the Flask web analyzer in a separate thread and show a clickable hyperlink"""

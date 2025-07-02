@@ -2,6 +2,8 @@
 
 > **Credit:** Project by Dhype7 (NYX team)
 
+> **Note:** This toolkit gives you all you need for forensics & penetration testing methodology.
+
 A comprehensive digital forensics toolkit with a modern GUI, designed for image, file, and cryptography analysis. Built for CTFs, security research, and forensic investigations.
 
 ---
@@ -140,10 +142,15 @@ This will start a local web server. Open your browser and go to [http://127.0.0.
 - **Real-time Feedback**: Status bar with progress and error handling
 
 ### 📁 File Analyzer
-- **File Carving**: Recover files from binary blobs
-- **String Analysis**: Extract readable strings with encoding detection
-- **Binary Analysis**: Inspect file structure and headers
-- **Format Detection**: Identify file types and signatures
+- **Type Detection**: Detect file type using magic bytes, mimetypes, and permissions, with user-friendly explanations
+- **Extract Archive**: Robust extraction for all major archive types, with password-protection detection
+- **Compress File**: Compress files/folders to zip, 7z, tar, gz, bz2, xz, lzma, rar, zst, ar, lz4 (with password support)
+- **String Extraction**: CTF-grade tool for ASCII/Unicode strings, filtering, unique toggle, min length, copy/save
+- **File Carving**: Carve embedded files using magic numbers, with save/filter/hex preview
+- **Entropy Analysis**: Windowed entropy calculation, bar graph, summary stats, and plain-language explanation
+- **Stego Analysis**: Runs multiple steganography and metadata tools (exiftool, binwalk, zsteg, steghide, outguess, strings, appended data check), with summary and save options
+- **File Breaker**: Password cracker for archives using John the Ripper and *2john tools, with wordlist selection and toolbar
+- **Recursive Extraction**: Recursively extract nested archives, with summary table and output folder access
 
 ### 🎨 Modern GUI
 - **Dark/Light Theme**: Professional themes with easy switching
