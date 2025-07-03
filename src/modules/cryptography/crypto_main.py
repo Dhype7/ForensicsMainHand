@@ -2718,8 +2718,7 @@ class CryptoMainWindow(tk.Frame):
         tk.Label(frame, text="Output:", font=("Arial", 10), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w', padx=10)
         self.sha256_output = tk.Text(frame, height=4, font=("Courier", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
         self.sha256_output.pack(fill='x', padx=10, pady=2)
-        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=lambda: self.clipboard_append(self.sha256_output.get('1.0', tk.END).strip())).pack(anchor='e', pady=5, padx=10)
-
+        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=self._copy_sha256_output).pack(anchor='e', pady=5, padx=10)
     def _adv_md5_ui(self):
         frame = self.adv_param_frame
         tk.Label(frame, text="MD5 Hash", font=("Arial", 16, "bold"), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(pady=(10, 5))
@@ -2742,8 +2741,7 @@ class CryptoMainWindow(tk.Frame):
         tk.Label(frame, text="Output:", font=("Arial", 10), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w', padx=10)
         self.md5_output = tk.Text(frame, height=4, font=("Courier", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
         self.md5_output.pack(fill='x', padx=10, pady=2)
-        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=lambda: self.clipboard_append(self.md5_output.get('1.0', tk.END).strip())).pack(anchor='e', pady=5, padx=10)
-
+        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=self._copy_md5_output).pack(anchor='e', pady=5, padx=10)
     def _adv_hmac_ui(self):
         frame = self.adv_param_frame
         tk.Label(frame, text="HMAC (Keyed Hash)", font=("Arial", 16, "bold"), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(pady=(10, 5))
@@ -2773,67 +2771,142 @@ class CryptoMainWindow(tk.Frame):
         tk.Label(frame, text="Output:", font=("Arial", 10), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w', padx=10)
         self.hmac_output = tk.Text(frame, height=4, font=("Courier", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
         self.hmac_output.pack(fill='x', padx=10, pady=2)
-        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=lambda: self.clipboard_append(self.hmac_output.get('1.0', tk.END).strip())).pack(anchor='e', pady=5, padx=10)
-
+        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=self._copy_hmac_output).pack(anchor='e', pady=5, padx=10)
     def _adv_magic_hasher_ui(self):
         frame = self.adv_param_frame
-        
         # Title
-        tk.Label(frame, text="Magic Hasher (Identify & Crack Hashes)", font=("Arial", 16, "bold"), 
-                bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(pady=(10, 5))
-        
+        tk.Label(frame, text="Magic Hasher (Identify & Crack Hashes)", font=("Arial", 16, "bold"), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(pady=(10, 5))
         # Hash input section
-        hash_frame = tk.LabelFrame(frame, text="Hash Input", font=("Arial", 12, "bold"),
-                                  bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
+        hash_frame = tk.LabelFrame(frame, text="Hash Input", font=("Arial", 12, "bold"), bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
         hash_frame.pack(fill='x', padx=10, pady=5)
-        
         # Hash input
         input_frame = tk.Frame(hash_frame, bg=Theme.get_color('primary'))
         input_frame.pack(fill='x', padx=10, pady=5)
-        tk.Label(input_frame, text="Hash:", font=("Arial", 10), 
-                bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w')
-        self.magic_hash_input = tk.Text(input_frame, height=3, font=("Courier", 10),
-                                       bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        tk.Label(input_frame, text="Hash:", font=("Arial", 10), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w')
+        self.magic_hash_input = tk.Text(input_frame, height=3, font=("Courier", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
         self.magic_hash_input.pack(fill='x', pady=2)
-        
-        # File input option
-        file_frame = tk.Frame(hash_frame, bg=Theme.get_color('primary'))
-        file_frame.pack(fill='x', padx=10, pady=5)
-        tk.Button(file_frame, text="Load Hash File", font=("Arial", 10),
-                 bg=Theme.get_color('accent'), fg=Theme.get_color('primary'),
-                 command=self._magic_hasher_load_file).pack(side='left', padx=5)
-        tk.Button(file_frame, text="Clear Input", font=("Arial", 10),
-                 bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'),
-                 command=self._magic_hasher_clear_input).pack(side='left', padx=5)
-        
+        # File input and wordlist selection
+        btn_frame = tk.Frame(hash_frame, bg=Theme.get_color('primary'))
+        btn_frame.pack(fill='x', padx=10, pady=5)
+        tk.Button(btn_frame, text="Load Hash File", font=("Arial", 10), bg=Theme.get_color('accent'), fg=Theme.get_color('primary'), command=self._magic_hasher_load_file).pack(side='left', padx=5)
+        tk.Button(btn_frame, text="Clear Input", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=self._magic_hasher_clear_input).pack(side='left', padx=5)
+        tk.Button(btn_frame, text="Select Wordlist", font=("Arial", 10), bg=Theme.get_color('accent'), fg=Theme.get_color('primary'), command=self._magic_hasher_select_wordlist).pack(side='left', padx=5)
+        self.magic_wordlist_label = tk.Label(btn_frame, text="No wordlist selected", font=("Arial", 9, "italic"), bg=Theme.get_color('primary'), fg=Theme.get_color('text_secondary'))
+        self.magic_wordlist_label.pack(side='left', padx=5)
+        self.magic_wordlist_path = None
         # Action buttons
         action_frame = tk.Frame(frame, bg=Theme.get_color('primary'))
         action_frame.pack(fill='x', padx=10, pady=5)
-        tk.Button(action_frame, text="🔍 Identify Hash", font=("Arial", 12, "bold"),
-                 bg=Theme.get_color('accent'), fg=Theme.get_color('primary'),
-                 command=self._magic_hasher_identify).pack(side='left', padx=5)
-        tk.Button(action_frame, text="🔨 Crack Hash", font=("Arial", 12, "bold"),
-                 bg=Theme.get_color('accent'), fg=Theme.get_color('primary'),
-                 command=self._magic_hasher_crack).pack(side='left', padx=5)
-        
-        # Results section
-        results_frame = tk.LabelFrame(frame, text="Results", font=("Arial", 12, "bold"),
-                                     bg=Theme.get_color('primary'), fg=Theme.get_color('accent'))
-        results_frame.pack(fill='both', expand=True, padx=10, pady=5)
-        
-        # Results output
-        output_frame = tk.Frame(results_frame, bg=Theme.get_color('primary'))
-        output_frame.pack(fill='both', expand=True, padx=10, pady=5)
-        self.magic_hasher_output = tk.Text(output_frame, height=12, font=("Courier", 10),
-                                          bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
-        self.magic_hasher_output.pack(fill='both', expand=True, pady=2)
-        
-        # Copy button
-        copy_frame = tk.Frame(results_frame, bg=Theme.get_color('primary'))
-        copy_frame.pack(fill='x', padx=10, pady=5)
-        tk.Button(copy_frame, text="Copy Results", font=("Arial", 10),
-                 bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'),
-                 command=self._magic_hasher_copy_results).pack(side='right', padx=5)
+        tk.Button(action_frame, text="🔍 Identify Hash", font=("Arial", 12, "bold"), bg=Theme.get_color('accent'), fg=Theme.get_color('primary'), command=self._magic_hasher_identify).pack(side='left', padx=5)
+        tk.Button(action_frame, text="🔨 Crack Hash", font=("Arial", 12, "bold"), bg=Theme.get_color('accent'), fg=Theme.get_color('primary'), command=self._magic_hasher_crack).pack(side='left', padx=5)
+        # Output section
+        tk.Label(frame, text="Output:", font=("Arial", 10), bg=Theme.get_color('primary'), fg=Theme.get_color('accent')).pack(anchor='w', padx=10)
+        self.magic_hasher_output = tk.Text(frame, height=10, font=("Courier", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'))
+        self.magic_hasher_output.pack(fill='x', padx=10, pady=5)
+        # Copy output button
+        tk.Button(frame, text="Copy Output", font=("Arial", 10), bg=Theme.get_color('secondary'), fg=Theme.get_color('accent'), command=self._magic_hasher_copy_results).pack(anchor='e', padx=10, pady=5)
+        # Reset identified mode/type
+        self.magic_identified_mode = None
+        self.magic_identified_type = None
+
+    def _identify_hash_type(self, hash_str):
+        """Identify hash type based on length and patterns, and return (type, hashcat_mode)"""
+        # Remove all whitespace for robust detection
+        hash_str = ''.join(hash_str.split())
+        length = len(hash_str)
+        # Common hash patterns and hashcat modes
+        # https://hashcat.net/wiki/doku.php?id=example_hashes
+        if length == 32 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
+            return ("MD5", "0")
+        elif length == 40 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
+            return ("SHA-1", "100")
+        elif length == 64 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
+            return ("SHA-256", "1400")
+        elif length == 128 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
+            return ("SHA-512", "1700")
+        elif hash_str.startswith('$2a$') or hash_str.startswith('$2b$') or hash_str.startswith('$2y$'):
+            return ("bcrypt", "3200")
+        elif hash_str.startswith('$1$'):
+            return ("MD5 Crypt", "500")
+        elif hash_str.startswith('$5$'):
+            return ("SHA-256 Crypt", "7400")
+        elif hash_str.startswith('$6$'):
+            return ("SHA-512 Crypt", "1800")
+        elif hash_str.startswith('$pbkdf2$'):
+            return ("PBKDF2", None)
+        elif length == 13:
+            return ("DES Crypt", "1500")
+        elif length == 34 and hash_str.startswith('$P$'):
+            return ("PHPass", "400")
+        elif length == 86 and hash_str.startswith('$2a$'):
+            return ("bcrypt", "3200")
+        else:
+            return ("Unknown/Unsupported", None)
+
+    def _magic_hasher_identify(self):
+        """Identify hash types using hashid"""
+        hash_text = self.magic_hash_input.get('1.0', tk.END).strip()
+        if not hash_text:
+            messagebox.showwarning("Warning", "Please enter or load hashes.")
+            return
+        try:
+            hashes = hash_text.split('\n')
+            results = []
+            # Only use the first non-empty hash for mode detection
+            self.magic_identified_mode = None
+            self.magic_identified_type = None
+            for hash_line in hashes:
+                hash_line = hash_line.strip()
+                if not hash_line:
+                    continue
+                hash_type, hashcat_mode = self._identify_hash_type(hash_line)
+                results.append(f"Hash: {hash_line}")
+                results.append(f"Type: {hash_type}")
+                if hashcat_mode:
+                    results.append(f"Hashcat Mode: {hashcat_mode}")
+                else:
+                    results.append(f"Hashcat Mode: Unknown/Unsupported")
+                results.append("-" * 50)
+                # Store the first detected mode/type for use in cracking
+                if self.magic_identified_mode is None and hashcat_mode:
+                    self.magic_identified_mode = hashcat_mode
+                    self.magic_identified_type = hash_type
+            output = "Hash Identification Results:\n" + "="*50 + "\n\n"
+            output += '\n'.join(results)
+            self.magic_hasher_output.delete('1.0', tk.END)
+            self.magic_hasher_output.insert('1.0', output)
+        except Exception as e:
+            messagebox.showerror("Error", f"Hash identification failed: {e}")
+
+    def _magic_hasher_crack(self):
+        hash_text = self.magic_hash_input.get('1.0', tk.END).strip()
+        if not hash_text:
+            messagebox.showwarning("Warning", "Please enter or load hashes.")
+            return
+        if not self.magic_wordlist_path:
+            messagebox.showwarning("Warning", "Please select a wordlist before cracking.")
+            return
+        # Use identified mode if available
+        mode = self.magic_identified_mode
+        if not mode:
+            self.magic_hasher_output.delete('1.0', tk.END)
+            self.magic_hasher_output.insert('1.0', 'Hashcat mode not identified. Please run Identify Hash first and ensure the hash type is supported.\n')
+            return
+        import tempfile
+        import subprocess
+        try:
+            with tempfile.NamedTemporaryFile('w+', delete=False) as tf:
+                tf.write(hash_text)
+                tf.flush()
+                hash_file = tf.name
+            cmd = ['hashcat', '-m', mode, hash_file, self.magic_wordlist_path, '--quiet', '--potfile-disable']
+            result = subprocess.run(cmd, capture_output=True, timeout=60)
+            output = result.stdout.decode(errors='replace') + result.stderr.decode(errors='replace')
+            self.magic_hasher_output.delete('1.0', tk.END)
+            self.magic_hasher_output.insert('1.0', output)
+        except Exception as e:
+            self.magic_hasher_output.delete('1.0', tk.END)
+            self.magic_hasher_output.insert('1.0', f'Error running hashcat: {e}\n')
 
     def clear_input(self):
         """Clear input text area"""
@@ -3051,136 +3124,6 @@ class CryptoMainWindow(tk.Frame):
     def _magic_hasher_clear_input(self):
         """Clear hash input"""
         self.magic_hash_input.delete(1.0, tk.END)
-
-    def _magic_hasher_identify(self):
-        """Identify hash types using hashid"""
-        hash_text = self.magic_hash_input.get('1.0', tk.END).strip()
-        if not hash_text:
-            messagebox.showwarning("Warning", "Please enter or load hashes.")
-            return
-        
-        try:
-            # Simple hash identification based on length and patterns
-            hashes = hash_text.split('\n')
-            results = []
-            
-            for hash_line in hashes:
-                hash_line = hash_line.strip()
-                if not hash_line:
-                    continue
-                
-                # Basic hash identification patterns
-                hash_type = self._identify_hash_type(hash_line)
-                results.append(f"Hash: {hash_line}")
-                results.append(f"Type: {hash_type}")
-                results.append("-" * 50)
-            
-            output = "Hash Identification Results:\n" + "="*50 + "\n\n"
-            output += '\n'.join(results)
-            
-            self.magic_hasher_output.delete('1.0', tk.END)
-            self.magic_hasher_output.insert(1.0, output)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Hash identification failed: {e}")
-
-    def _identify_hash_type(self, hash_str):
-        """Identify hash type based on length and patterns"""
-        length = len(hash_str)
-        
-        # Common hash patterns
-        if length == 32 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
-            return "MD5"
-        elif length == 40 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
-            return "SHA-1"
-        elif length == 64 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
-            return "SHA-256"
-        elif length == 128 and all(c in '0123456789abcdefABCDEF' for c in hash_str):
-            return "SHA-512"
-        elif hash_str.startswith('$2a$') or hash_str.startswith('$2b$') or hash_str.startswith('$2y$'):
-            return "bcrypt"
-        elif hash_str.startswith('$1$'):
-            return "MD5 Crypt"
-        elif hash_str.startswith('$5$'):
-            return "SHA-256 Crypt"
-        elif hash_str.startswith('$6$'):
-            return "SHA-512 Crypt"
-        elif hash_str.startswith('$pbkdf2$'):
-            return "PBKDF2"
-        elif length == 13:
-            return "DES Crypt"
-        elif length == 34 and hash_str.startswith('$P$'):
-            return "PHPass"
-        elif length == 86 and hash_str.startswith('$2a$'):
-            return "bcrypt"
-        else:
-            return "Unknown/Unsupported"
-
-    def _magic_hasher_crack(self):
-        """Attempt to crack hashes using various methods"""
-        hash_text = self.magic_hash_input.get('1.0', tk.END).strip()
-        if not hash_text:
-            messagebox.showwarning("Warning", "Please enter or load hashes.")
-            return
-        
-        try:
-            hashes = hash_text.split('\n')
-            results = []
-            
-            for hash_line in hashes:
-                hash_line = hash_line.strip()
-                if not hash_line:
-                    continue
-                
-                hash_type = self._identify_hash_type(hash_line)
-                cracked = self._attempt_crack(hash_line, hash_type)
-                
-                results.append(f"Hash: {hash_line}")
-                results.append(f"Type: {hash_type}")
-                results.append(f"Result: {cracked}")
-                results.append("-" * 50)
-            
-            output = "Hash Cracking Results:\n" + "="*50 + "\n\n"
-            output += '\n'.join(results)
-            
-            self.magic_hasher_output.delete('1.0', tk.END)
-            self.magic_hasher_output.insert(1.0, output)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Hash cracking failed: {e}")
-
-    def _attempt_crack(self, hash_str, hash_type):
-        """Attempt to crack a single hash"""
-        # This is a simplified cracking attempt
-        # In a real implementation, you would integrate with Hashcat or similar tools
-        
-        # Common passwords to try
-        common_passwords = [
-            "password", "123456", "admin", "root", "test", "123", "password123",
-            "qwerty", "letmein", "welcome", "monkey", "dragon", "master"
-        ]
-        
-        for password in common_passwords:
-            if self._verify_hash(password, hash_str, hash_type):
-                return f"CRACKED: {password}"
-        
-        return "Not cracked (tried common passwords)"
-
-    def _verify_hash(self, password, hash_str, hash_type):
-        """Verify if a password matches a hash"""
-        try:
-            if hash_type == "MD5":
-                return hashlib.md5(password.encode()).hexdigest() == hash_str.lower()
-            elif hash_type == "SHA-1":
-                return hashlib.sha1(password.encode()).hexdigest() == hash_str.lower()
-            elif hash_type == "SHA-256":
-                return hashlib.sha256(password.encode()).hexdigest() == hash_str.lower()
-            elif hash_type == "SHA-512":
-                return hashlib.sha512(password.encode()).hexdigest() == hash_str.lower()
-            else:
-                return False
-        except:
-            return False
 
     def _magic_hasher_copy_results(self):
         """Copy results to clipboard"""
@@ -3468,6 +3411,59 @@ class CryptoMainWindow(tk.Frame):
         self.apply_theme()
         if self.theme_combo is not None:
             self.theme_combo.set(self.theme_var.get())
+
+    def _magic_hasher_select_wordlist(self):
+        """Prompt user to select a wordlist file and update the label/path."""
+        file_path = filedialog.askopenfilename(title="Select Wordlist File")
+        if file_path:
+            self.magic_wordlist_path = file_path
+            self.magic_wordlist_label.config(text=f"Wordlist: {os.path.basename(file_path)}")
+        else:
+            self.magic_wordlist_path = None
+            self.magic_wordlist_label.config(text="No wordlist selected")
+
+    # --- Fix: Consistent clipboard copy for all output areas ---
+    def _copy_md5_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.md5_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_sha256_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.sha256_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_base_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.base_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_hmac_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.hmac_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_otp_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.otp_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_caesar_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.caesar_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_subst_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.subst_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_rail_fence_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.rail_fence_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_dots_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.dots_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    def _copy_morse_output(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.morse_output.get('1.0', tk.END).strip())
+        messagebox.showinfo("Copied", "Output copied to clipboard!")
+    # --- End fix ---
 
 def text_to_ascii_binary(text):
     return ' '.join(f'{ord(ch):08b}' for ch in text)

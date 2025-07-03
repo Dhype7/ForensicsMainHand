@@ -995,6 +995,7 @@ class MagicHasherWindow:
         self.window.geometry("700x500")
         self.window.configure(bg=Theme.get_color('primary'))
         self.window.grab_set()
+        self.wordlist_path = None  # Store selected wordlist path
         self.create_widgets()
 
     def create_widgets(self):
@@ -1009,6 +1010,10 @@ class MagicHasherWindow:
         btn_frame.pack(anchor='w', pady=2)
         tk.Button(btn_frame, text="Load File", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), command=self.load_file).pack(side='left', padx=2)
         tk.Button(btn_frame, text="Clear", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.clear_input).pack(side='left', padx=2)
+        # Add wordlist selection button and label
+        tk.Button(btn_frame, text="Select Wordlist", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), command=self.select_wordlist).pack(side='left', padx=2)
+        self.wordlist_label = tk.Label(btn_frame, text="No wordlist selected", font=Theme.get_font('default'), fg=Theme.get_color('text_secondary'), bg=Theme.get_color('primary'))
+        self.wordlist_label.pack(side='left', padx=5)
         action_frame = tk.Frame(self.window, bg=Theme.get_color('primary'))
         action_frame.pack(pady=10)
         tk.Button(action_frame, text="Identify Hash Type", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('accent'), command=self.identify_hash).pack(side='left', padx=10)
@@ -1018,6 +1023,44 @@ class MagicHasherWindow:
         self.output_text = tk.Text(self.window, height=10, font=Theme.get_font('monospace'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'))
         self.output_text.pack(fill='both', expand=True, padx=20, pady=5)
         tk.Button(self.window, text="Copy Output", font=Theme.get_font('button'), fg=Theme.get_color('text_primary'), bg=Theme.get_color('secondary'), command=self.copy_output).pack(pady=5)
+
+    def select_wordlist(self):
+        from tkinter.filedialog import askopenfilename
+        wordlist = askopenfilename(title="Select Wordlist for Hashcat", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+        if wordlist:
+            self.wordlist_path = wordlist
+            self.wordlist_label.config(text=f"Wordlist: {wordlist}")
+        else:
+            self.wordlist_path = None
+            self.wordlist_label.config(text="No wordlist selected")
+
+    def crack_hash(self):
+        import subprocess
+        import tempfile
+        hash_value = self.hash_entry.get('1.0', tk.END).strip()
+        if not hash_value:
+            self.output_text.insert('1.0', 'Please enter a hash or load a file.\n')
+            return
+        from tkinter.simpledialog import askstring
+        mode = askstring("Hashcat Mode", "Enter hashcat mode number (e.g., 0 for MD5, 100 for SHA1, 1400 for SHA256):\nRefer to https://hashcat.net/wiki/doku.php?id=example_hashes")
+        if not mode or not mode.isdigit():
+            self.output_text.insert('1.0', 'Invalid or missing hashcat mode.\n')
+            return
+        if not self.wordlist_path:
+            self.output_text.insert('1.0', 'No wordlist selected. Please select a wordlist first.\n')
+            return
+        with tempfile.NamedTemporaryFile('w+', delete=False) as tf:
+            tf.write(hash_value)
+            tf.flush()
+            hash_file = tf.name
+        try:
+            cmd = ['hashcat', '-m', mode, hash_file, self.wordlist_path, '--quiet', '--potfile-disable']
+            result = subprocess.run(cmd, capture_output=True, timeout=60)
+            output = result.stdout.decode(errors='replace') + result.stderr.decode(errors='replace')
+            self.output_text.delete('1.0', tk.END)
+            self.output_text.insert('1.0', output)
+        except Exception as e:
+            self.output_text.insert('1.0', f'Error running hashcat: {e}\n')
 
     def load_file(self):
         file_path = filedialog.askopenfilename(title="Select Hash File", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
@@ -1043,36 +1086,6 @@ class MagicHasherWindow:
             self.output_text.insert('1.0', output)
         except Exception as e:
             self.output_text.insert('1.0', f'Error running hash-identifier: {e}\n')
-
-    def crack_hash(self):
-        import subprocess
-        import tempfile
-        hash_value = self.hash_entry.get('1.0', tk.END).strip()
-        if not hash_value:
-            self.output_text.insert('1.0', 'Please enter a hash or load a file.\n')
-            return
-        from tkinter.simpledialog import askstring
-        mode = askstring("Hashcat Mode", "Enter hashcat mode number (e.g., 0 for MD5, 100 for SHA1, 1400 for SHA256):\nRefer to https://hashcat.net/wiki/doku.php?id=example_hashes")
-        if not mode or not mode.isdigit():
-            self.output_text.insert('1.0', 'Invalid or missing hashcat mode.\n')
-            return
-        with tempfile.NamedTemporaryFile('w+', delete=False) as tf:
-            tf.write(hash_value)
-            tf.flush()
-            hash_file = tf.name
-        from tkinter.filedialog import askopenfilename
-        wordlist = askopenfilename(title="Select Wordlist for Hashcat", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
-        if not wordlist:
-            self.output_text.insert('1.0', 'No wordlist selected.\n')
-            return
-        try:
-            cmd = ['hashcat', '-m', mode, hash_file, wordlist, '--quiet', '--potfile-disable']
-            result = subprocess.run(cmd, capture_output=True, timeout=60)
-            output = result.stdout.decode(errors='replace') + result.stderr.decode(errors='replace')
-            self.output_text.delete('1.0', tk.END)
-            self.output_text.insert('1.0', output)
-        except Exception as e:
-            self.output_text.insert('1.0', f'Error running hashcat: {e}\n')
 
     def copy_output(self):
         self.window.clipboard_clear()
