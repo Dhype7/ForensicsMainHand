@@ -299,7 +299,8 @@ class FileAnalyzerMainWindow(tk.Frame):
 
     def on_theme_change(self, event=None) -> None:
         """Handles theme change from the dropdown."""
-        if self.theme_change_callback:
+        # Only call the callback if this is a local theme change (not from external)
+        if self.theme_change_callback and not hasattr(self, '_external_theme_change'):
             self.theme_change_callback()
         else:
             Theme.set_theme(self.theme_var.get())
@@ -308,6 +309,8 @@ class FileAnalyzerMainWindow(tk.Frame):
 
     def _on_external_theme_change(self, *args) -> None:
         """Handles external theme changes (e.g., global variable)."""
+        # Set flag to prevent recursion
+        self._external_theme_change = True
         if self.theme_var.get() != Theme.get_current_theme():
             Theme.set_theme(self.theme_var.get())
         self._apply_theme_to_all_widgets()
@@ -315,6 +318,8 @@ class FileAnalyzerMainWindow(tk.Frame):
         for child in self.winfo_children():
             if isinstance(child, ttk.Combobox):
                 child.set(self.theme_var.get())
+        # Clear the flag
+        delattr(self, '_external_theme_change')
 
     def load_file(self) -> None:
         """Loads the selected file for analysis."""

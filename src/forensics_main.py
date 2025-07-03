@@ -401,9 +401,13 @@ class ForensicsToolkitWindow:
         """Update theme everywhere when changed from any window"""
         Theme.set_theme(self.theme_var.get())
         self.apply_theme()
-        self.file_analyzer_frame.on_theme_change()
-        self.photo_analyzer_frame.on_theme_change()
-        self.crypto_frame.on_theme_change()
+        # Only call theme change on frames if they exist and are not the source of the change
+        if hasattr(self, 'file_analyzer_frame') and self.file_analyzer_frame:
+            self.file_analyzer_frame._on_external_theme_change()
+        if hasattr(self, 'photo_analyzer_frame') and self.photo_analyzer_frame:
+            self.photo_analyzer_frame._on_external_theme_change()
+        if hasattr(self, 'crypto_frame') and self.crypto_frame:
+            self.crypto_frame._on_external_theme_change()
         self.root.update_idletasks()
 
     def on_theme_change(self, event=None):
