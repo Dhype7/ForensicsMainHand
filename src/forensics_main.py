@@ -38,7 +38,7 @@ class ForensicsToolkitWindow:
     def setup_window(self):
         """Setup main window properties"""
         self.root.title(f"{Settings.APP_NAME} - Forensics Toolkit v{Settings.APP_VERSION}")
-        self.root.geometry("1400x1000")
+        self.root.geometry("1200x1000")
         self.root.minsize(1000, 800)
         
         # Configure window
@@ -50,8 +50,8 @@ class ForensicsToolkitWindow:
     def center_window(self):
         """Center window on screen"""
         self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
+        width = 1200
+        height = 1000
         x = (self.root.winfo_screenwidth() // 2) - (width // 2)
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
         self.root.geometry(f'{width}x{height}+{x}+{y}')
