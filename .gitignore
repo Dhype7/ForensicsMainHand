@@ -1,0 +1,119 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.pyo
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+*.log
+demoanalyzer.log
+temp_*
+*.extracted/
+*.extracted/
+_*.extracted/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Output files
+output/
+results/
+extracted/
+
+# C extensions
+*.c
+*.cpp
+*.o
+*.a
+*.dylib
+*.dll
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Test, coverage, and profiling
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Secret files (never commit real secrets!)
+.env
+.env.*
+*.key
+*.pem
+
+# Application specific
+*.sqlite3
+*.db
+*.db3
+*.pkl
+*.lock
+
+# Forensics/analysis output
+*.dump
+*.bin
+*.raw
+
+# Backup files
+*~
+*.bak
+
+# Misc
+node_modules/ 

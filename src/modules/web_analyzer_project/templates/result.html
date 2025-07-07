@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #121212 0%, #232526 100%);
+            color: #fff;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1000px;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+        }
+        .card-header {
+            background-color: #00ffe5;
+            color: #000000;
+            font-weight: bold;
+        }
+        .table th, .table td {
+            color: #000000;
+            font-weight: bold;
+        }
+        .result-table {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px 0 #00ffe533;
+        }
+        .table-dark th {
+            background-color: #232526 !important;
+            color: #00ffe5 !important;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+        .badge-open {
+            background-color: #00ff7f;
+        }
+        .badge-closed {
+            background-color: #ff4c4c;
+        }
+        .badge-error {
+            background-color: #ffc107;
+            color: #000;
+        }
+        a.btn-back {
+            color: #000;
+            background-color: #00ffe5;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        a.btn-back:hover {
+            background-color: #00e6cf;
+        }
+        .brute-force-heading {
+            color: #00ffe5;
+            font-weight: bold;
+        }
+        .brute-force-label {
+            color: #00ffe5;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-header">
+                🔍 {{ title }}
+            </div>
+            <div class="card-body">
+                {% if results %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-bordered result-table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 40%;">Key</th>
+                                    <th style="width: 60%;">Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, value in results.items() %}
+                                    <tr>
+                                        <td>{{ key }}</td>
+                                        <td>
+                                            {% if "Success" in value %}
+                                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> {{ value }}</span>
+                                            {% elif "Failed" in value %}
+                                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> {{ value }}</span>
+                                            {% elif "Error" in value %}
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> {{ value }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ value }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No results to display.</p>
+                {% endif %}
+
+                {% if title == 'Login Page Discovery' and found_login %}
+                    <div class="mt-4">
+                        <h4 class="brute-force-heading">Brute Force Login</h4>
+                        <form action="/brute_force_login" method="post" enctype="multipart/form-data">
+                            <input type="text" name="login_url" class="form-control mb-2" value="{{ found_login }}" required readonly>
+                            <label class="form-label brute-force-label">Usernames (comma-separated or upload file):</label>
+                            <textarea name="usernames" class="form-control mb-2" placeholder="Usernames (comma-separated)"></textarea>
+                            <input type="file" name="usernames_file" class="form-control mb-2">
+                            <label class="form-label brute-force-label">Passwords (comma-separated or upload file):</label>
+                            <textarea name="passwords" class="form-control mb-2" placeholder="Passwords (comma-separated)"></textarea>
+                            <input type="file" name="passwords_file" class="form-control mb-2">
+                            <button class="btn btn-primary">Brute Force</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <a href="/" class="btn-back">⬅️ Back to Home</a>
+    </div>
+</body>
+</html>
